@@ -1,0 +1,25 @@
+name = "mmi-worker"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[triggers]
+crons = ["30 10 * * 1-5"]
+# 10:30 UTC = 4:00 PM IST on weekdays
+# Worker checks market open status before proceeding
+
+[[kv_namespaces]]
+binding = "MMI_KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+preview_id = "REPLACE_WITH_KV_PREVIEW_ID"
+
+[vars]
+GITHUB_REPO = "stockmaniacs/mmi-trading-system"
+GITHUB_DATA_BRANCH = "main"
+BREVO_SENDER_EMAIL = "alerts@stockmaniacs.net"
+BREVO_SENDER_NAME = "StockManiacs Alerts"
+ALERT_RECIPIENTS = "stockmaniacsdotnet@gmail.com,helpdesk@stockmaniacs.net,stockmaniacs@ymail.com"
+
+# Secrets — add via `wrangler secret put`:
+#   GITHUB_TOKEN
+#   BREVO_API_KEY
+#   UPSTOX_ACCESS_TOKEN

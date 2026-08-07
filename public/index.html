@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MMI Dashboard — StockManiacs</title>
+  <meta name="description" content="Live Market Mood Index tracker with Nifty 50 signals and historical data." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <!--
+    Runtime config — set workerUrl to your deployed Cloudflare Worker URL.
+    Example: https://mmi-worker.YOUR-ACCOUNT.workers.dev
+    Leave empty to call /api/* relative to the same origin (useful for local dev).
+  -->
+  <script>
+    window.MMI_CONFIG = {
+      workerUrl: "", // e.g. "https://mmi-worker.example.workers.dev"
+    };
+  </script>
+</head>
+<body>
+  <div class="page">
+
+    <!-- ── Header ─────────────────────────────────────────── -->
+    <header class="header">
+      <div class="header__logo">
+        <img src="https://mailblast-api.stockmaniacs.net/static/logo.png"
+             alt="StockManiacs" onerror="this.style.display='none'" />
+        <div>
+          <div class="header__title">Market Mood Index</div>
+          <div class="header__subtitle">NSE · India · Real-time signal tracker</div>
+        </div>
+      </div>
+      <div class="header__updated" id="updated-at"></div>
+    </header>
+
+    <!-- ── Loading state ──────────────────────────────────── -->
+    <div id="state-loading" class="state-loading" style="display:flex;flex-direction:column;align-items:center;">
+      <div class="spinner"></div>
+      <p>Fetching latest MMI data…</p>
+    </div>
+
+    <!-- ── Error state ────────────────────────────────────── -->
+    <div id="state-error" class="state-error" style="display:none;">
+      <p>⚠️ Could not load data.</p>
+      <p class="error-message" style="font-size:.85rem;margin-top:8px;color:#f87171;"></p>
+    </div>
+
+    <!-- ── Main content (hidden until data loads) ─────────── -->
+    <div id="main-content" style="display:none;">
+
+      <!-- Hero: Gauge + Signal -->
+      <div class="hero">
+
+        <!-- Gauge card -->
+        <div class="card gauge-card">
+          <canvas id="gauge-canvas"></canvas>
+          <div class="mmi-value" id="mmi-value">—</div>
+          <div class="mmi-label" id="mmi-label">Loading…</div>
+        </div>
+
+        <!-- Signal card -->
+        <div class="card signal-card">
+          <div>
+            <div class="section-title">Today's Signal</div>
+            <div class="signal-badge" id="signal-badge">—</div>
+          </div>
+          <p class="signal-action" id="signal-action"></p>
+          <div>
+            <div class="index-row">
+              <span class="index-row__name">Nifty 50</span>
+              <span class="index-row__val" id="nifty50">—</span>
+            </div>
+            <div class="index-row">
+              <span class="index-row__name">Nifty Next 50</span>
+              <span class="index-row__val" id="niftyNext50">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-card__label">Total Records</div>
+          <div class="stat-card__value" id="stat-total">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">Buy Days (30d)</div>
+          <div class="stat-card__value" id="stat-buy" style="color:#65a30d;">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">Hold Days (30d)</div>
+          <div class="stat-card__value" id="stat-hold" style="color:#ca8a04;">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">Sell Days (30d)</div>
+          <div class="stat-card__value" id="stat-sell" style="color:#dc2626;">—</div>
+        </div>
+      </div>
+
+      <!-- History chart -->
+      <div class="chart-section">
+        <div class="section-title">MMI History (last 90 days)</div>
+        <div id="history-chart"></div>
+      </div>
+
+      <!-- Signal history table -->
+      <div class="table-section">
+        <div class="section-title">Signal History</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>MMI</th>
+              <th>Mood</th>
+              <th>Signal</th>
+              <th>Nifty 50</th>
+            </tr>
+          </thead>
+          <tbody id="signals-tbody">
+            <tr><td colspan="5" style="text-align:center;color:#94a3b8;">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div><!-- /main-content -->
+
+  </div><!-- /page -->
+
+  <script type="module" src="/js/dashboard.js"></script>
+</body>
+</html>
