@@ -1,268 +1,377 @@
 /**
  * dashboard.js
- * Fetches live MMI data from the Cloudflare Worker API and renders the dashboard.
+ * Fetches MMI signal data and renders the dashboard.
  *
- * Reads window.MMI_CONFIG.workerUrl at runtime (set inline in index.html).
- * Falls back to /api/* for local development.
+ * Data strategy:
+ *   1. Fetch latest signal  → GET {API_BASE}/api/signal
+ *   2. Fetch history        → GET {HISTORY_URL} (GitHub raw, newest-first)
+ *   3. If live API fails    → use history[0] as "latest"
+ *   4. Chart uses oldest-first (reverse of HISTORY_URL order)
+ *   5. Table shows first 30 entries (newest) from HISTORY_URL order
  */
 
-import { animateGauge } from "./gauge.js";
+'use strict';
 
-// ---------------------------------------------------------------------------
-// Config
-// ---------------------------------------------------------------------------
+// ── Config ─────────────────────────────────────────────────────────────────
 
-const cfg = window.MMI_CONFIG ?? {};
-const WORKER_BASE = (cfg.workerUrl ?? "").replace(/\/$/, "");
-const API = (path) => `${WORKER_BASE}${path}`;
+const API_BASE    = 'https://mmi-worker.YOUR-SUBDOMAIN.workers.dev';
+const HISTORY_URL = 'https://raw.githubusercontent.com/stockmaniacs/mmi-trading-system/main/data/signals.json';
 
-const SIGNAL_CSS_CLASS = {
-  "STRONG BUY": "sig--STRONG-BUY",
-  "BUY":        "sig--BUY",
-  "HOLD":       "sig--HOLD",
-  "REDUCE":     "sig--REDUCE",
-  "AVOID":      "sig--AVOID",
+// ── Zone meta ───────────────────────────────────────────────────────────────
+
+const ZONE_META = {
+  extreme_fear:       { label: 'Extreme Fear',       color: '#16a34a' },
+  fear:               { label: 'Fear',               color: '#22c55e' },
+  greed:              { label: 'Greed',              color: '#f59e0b' },
+  extreme_greed:      { label: 'Extreme Greed',      color: '#f97316' },
+  high_extreme_greed: { label: 'High Extreme Greed', color: '#dc2626' },
 };
 
-const SIGNAL_COLOR = {
-  "STRONG BUY": "#16a34a",
-  "BUY":        "#65a30d",
-  "HOLD":       "#ca8a04",
-  "REDUCE":     "#ea580c",
-  "AVOID":      "#dc2626",
+const MOMENTUM_LABELS = {
+  rising_fast:  '↑↑ Rising Fast',
+  rising:       '↑ Rising',
+  neutral:      '→ Neutral',
+  falling:      '↓ Falling',
+  falling_fast: '↓↓ Falling Fast',
 };
 
-// ---------------------------------------------------------------------------
-// Bootstrap
-// ---------------------------------------------------------------------------
+// ── Utilities ───────────────────────────────────────────────────────────────
 
-document.addEventListener("DOMContentLoaded", async () => {
+const inr = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 });
+
+function fmt(v, decimals = 1) {
+  const n = parseFloat(v);
+  return isNaN(n) ? '—' : n.toFixed(decimals);
+}
+
+function fmtDelta(v) {
+  const n = parseFloat(v);
+  if (isNaN(n)) return { text: '—', cls: '' };
+  const sign = n > 0 ? '+' : '';
+  const cls  = n > 0.5 ? 'delta-up' : n < -0.5 ? 'delta-down' : 'delta-flat';
+  return { text: sign + n.toFixed(1), cls };
+}
+
+function zoneColor(zone) {
+  return (ZONE_META[zone] || {}).color || '#94a3b8';
+}
+
+function zoneLabel(zone) {
+  return (ZONE_META[zone] || {}).label || (zone || '—').replace(/_/g, ' ');
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function formatTs(isoStr) {
+  if (!isoStr) return '—';
+  return new Date(isoStr).toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  }) + ' IST';
+}
+
+function safeSubInd(val) {
+  const n = parseFloat(val);
+  return isNaN(n) ? '—' : n.toFixed(2);
+}
+
+function show(id) { const el = document.getElementById(id); if (el) el.style.display = 'block'; }
+function hide(id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
+function setText(id, txt) { const el = document.getElementById(id); if (el) el.textContent = txt; }
+
+// ── Fetch helpers ────────────────────────────────────────────────────────────
+
+async function fetchJSON(url, opts = {}) {
+  const res = await fetch(url, { ...opts, signal: AbortSignal.timeout(8000) });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+// ── Main ─────────────────────────────────────────────────────────────────────
+
+let mmiChart = null;
+
+async function init() {
+  // Footer year
+  const fyEl = document.getElementById('footer-year');
+  if (fyEl) fyEl.textContent = new Date().getFullYear();
+
+  let signal  = null;
+  let history = [];   // newest-first (as stored in signals.json)
+  let apiError = null;
+
+  // ── 1. Fetch live signal ─────────────────────────────────────────────────
   try {
-    showLoading();
-    const [latest, signals] = await Promise.all([
-      apiFetch("/api/latest"),
-      apiFetch("/api/signals"),
-    ]);
-    hideLoading();
-    renderDashboard(latest.data, signals.data);
+    signal = await fetchJSON(`${API_BASE}/api/signal`);
   } catch (err) {
-    showError(err.message);
+    apiError = 'Live signal unavailable — showing latest from history.';
   }
-});
 
-// ---------------------------------------------------------------------------
-// Render
-// ---------------------------------------------------------------------------
+  // ── 2. Fetch history ─────────────────────────────────────────────────────
+  try {
+    const raw = await fetchJSON(HISTORY_URL);
+    if (Array.isArray(raw) && raw.length > 0) {
+      history = raw;
+    }
+  } catch (_) {
+    // history unavailable — proceed with live signal only
+  }
 
-function renderDashboard(latest, signals) {
-  renderGauge(latest);
-  renderSignalCard(latest);
-  renderStats(signals);
-  renderChart(signals);
-  renderTable(signals);
-  renderUpdatedAt(latest.fetchedAt);
+  // ── 3. Fallback: use history[0] if live API failed ───────────────────────
+  if (!signal && history.length > 0) {
+    signal = history[0]; // newest record
+  }
+
+  // Nothing at all — leave loading and show generic error
+  if (!signal) {
+    hide('loading-overlay');
+    const banner = document.getElementById('error-banner');
+    if (banner) {
+      banner.textContent = 'Unable to load MMI data. Please try again later.';
+      banner.style.display = '';
+    }
+    return;
+  }
+
+  // ── 4. Show error banner if partial failure ───────────────────────────────
+  if (apiError) {
+    const banner = document.getElementById('error-banner');
+    if (banner) {
+      banner.textContent = apiError;
+      banner.style.display = '';
+    }
+  }
+
+  // ── 5. Render ─────────────────────────────────────────────────────────────
+  renderHero(signal);
+  renderIndices(signal);
+  renderMomentum(signal);
+  renderSubIndicators(signal);
+  renderAnalysis(signal);
+  renderChart(history);
+  renderTable(history);
+  renderHeader(signal);
+
+  hide('loading-overlay');
+  show('main-content');
 }
 
-// --- Gauge ---
-function renderGauge(r) {
-  const canvas = document.getElementById("gauge-canvas");
-  if (!canvas) return;
-  animateGauge(canvas, 0, r.mmi);
+// ── Section renderers ─────────────────────────────────────────────────────────
 
-  el("mmi-value").textContent = r.mmi.toFixed(1);
-  el("mmi-value").style.color = r.color ?? SIGNAL_COLOR[r.signal] ?? "#f1f5f9";
-  el("mmi-label").textContent = r.interpretation;
+function renderHero(s) {
+  renderGauge(s.mmi, s.zone, s.color);
+
+  const badge = document.getElementById('signal-badge');
+  if (badge) {
+    badge.textContent  = (s.emoji ? s.emoji + ' ' : '') + (s.signal || '—').toUpperCase();
+    badge.style.background = s.color || '#94a3b8';
+  }
+
+  setText('signal-action', s.action || '');
 }
 
-// --- Signal card ---
-function renderSignalCard(r) {
-  const badge = el("signal-badge");
-  badge.textContent = r.signal;
-  badge.style.background = r.color ?? SIGNAL_COLOR[r.signal] ?? "#6366f1";
+function renderIndices(s) {
+  const n50 = parseFloat(s.nifty50Close);
+  setText('nifty50-val',  isNaN(n50)  ? '—' : '₹' + inr.format(n50));
 
-  el("signal-action").textContent = r.action;
-
-  const n50 = el("nifty50");
-  const nn50 = el("niftyNext50");
-  if (n50)  n50.textContent  = r.nifty50   != null ? `₹${r.nifty50.toLocaleString("en-IN")}` : "—";
-  if (nn50) nn50.textContent = r.niftyNext50 != null ? `₹${r.niftyNext50.toLocaleString("en-IN")}` : "—";
+  const nn50 = parseFloat(s.niftyNext50Close);
+  setText('niftynxt50-val', isNaN(nn50) ? '—' : '₹' + inr.format(nn50));
 }
 
-// --- Stats ---
-function renderStats(signals) {
-  if (!signals?.length) return;
+function renderMomentum(s) {
+  const day  = fmtDelta(s.mmiDelta);
+  const week = fmtDelta(s.mmiDeltaWeek);
 
-  // Last 30 days
-  const recent = signals.slice(-30);
-  const counts = {};
-  for (const r of recent) counts[r.signal] = (counts[r.signal] ?? 0) + 1;
+  const dayEl = document.getElementById('delta-day');
+  if (dayEl) {
+    dayEl.textContent = day.text;
+    dayEl.className   = 'card-value ' + day.cls;
+  }
 
-  const buySig  = (counts["STRONG BUY"] ?? 0) + (counts["BUY"] ?? 0);
-  const holdSig = counts["HOLD"] ?? 0;
-  const sellSig = (counts["REDUCE"] ?? 0) + (counts["AVOID"] ?? 0);
+  const wkEl = document.getElementById('delta-week');
+  if (wkEl) {
+    wkEl.textContent = week.text;
+    wkEl.className   = 'card-value ' + week.cls;
+  }
 
-  setOptional("stat-buy",  buySig);
-  setOptional("stat-hold", holdSig);
-  setOptional("stat-sell", sellSig);
-  setOptional("stat-total", signals.length);
+  setText('momentum-label', MOMENTUM_LABELS[s.momentum] || s.momentum || '—');
+  setText('momentum-sub', '7-day: ' + fmt(s.mmiDeltaWeek, 1) + ' pts');
 }
 
-// --- Chart (lightweight SVG sparkline) ---
-function renderChart(signals) {
-  const container = document.getElementById("history-chart");
-  if (!container || !signals?.length) return;
-
-  const W = container.clientWidth || 600;
-  const H = 280;
-  const PAD = { top: 20, right: 20, bottom: 40, left: 48 };
-  const chartW = W - PAD.left - PAD.right;
-  const chartH = H - PAD.top - PAD.bottom;
-
-  const data = signals.slice(-90); // up to 90 points
-  const mmis = data.map((d) => d.mmi);
-  const minV = 0, maxV = 100;
-
-  const xScale = (i) => PAD.left + (i / (data.length - 1)) * chartW;
-  const yScale = (v) => PAD.top + chartH - ((v - minV) / (maxV - minV)) * chartH;
-
-  // Build path
-  const points = data.map((d, i) => `${xScale(i).toFixed(1)},${yScale(d.mmi).toFixed(1)}`);
-  const linePath = `M${points.join("L")}`;
-
-  // Area fill path
-  const areaPath =
-    `M${xScale(0).toFixed(1)},${yScale(0).toFixed(1)}` +
-    `L${points.join("L")}` +
-    `L${xScale(data.length - 1).toFixed(1)},${yScale(0).toFixed(1)}Z`;
-
-  // Zone band lines
-  const BANDS = [
-    { v: 30, label: "30 (Fear)", dash: "4,3" },
-    { v: 50, label: "50",        dash: "4,3" },
-    { v: 69, label: "69 (Greed)", dash: "4,3" },
-    { v: 80, label: "80",        dash: "4,3" },
-  ];
-
-  const bandLines = BANDS.map(({ v, label, dash }) => {
-    const y = yScale(v).toFixed(1);
-    return `
-      <line x1="${PAD.left}" y1="${y}" x2="${PAD.left + chartW}" y2="${y}"
-            stroke="rgba(255,255,255,.12)" stroke-width="1" stroke-dasharray="${dash}" />
-      <text x="${PAD.left - 4}" y="${y}" fill="rgba(255,255,255,.3)"
-            font-size="10" text-anchor="end" dominant-baseline="middle">${v}</text>`;
-  }).join("");
-
-  // X-axis labels (every ~15 entries)
-  const step = Math.max(1, Math.round(data.length / 6));
-  const xLabels = data
-    .filter((_, i) => i % step === 0 || i === data.length - 1)
-    .map((d, _, arr) => {
-      const origI = data.findIndex((x) => x.date === d.date);
-      const xPos = xScale(origI).toFixed(1);
-      const label = d.date.slice(5); // "MM-DD"
-      return `<text x="${xPos}" y="${H - 8}" fill="rgba(255,255,255,.4)"
-                    font-size="10" text-anchor="middle">${label}</text>`;
-    }).join("");
-
-  container.innerHTML = `
-    <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"
-         style="width:100%;height:100%;overflow:visible;">
-      <defs>
-        <linearGradient id="area-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stop-color="#6366f1" stop-opacity="0.3"/>
-          <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
-        </linearGradient>
-        <clipPath id="chart-clip">
-          <rect x="${PAD.left}" y="${PAD.top}" width="${chartW}" height="${chartH}" />
-        </clipPath>
-      </defs>
-
-      ${bandLines}
-
-      <g clip-path="url(#chart-clip)">
-        <path d="${areaPath}" fill="url(#area-grad)" />
-        <path d="${linePath}" fill="none" stroke="#6366f1" stroke-width="2"
-              stroke-linejoin="round" stroke-linecap="round" />
-      </g>
-
-      ${xLabels}
-    </svg>`;
+function renderSubIndicators(s) {
+  const sub = s.subIndicators || {};
+  setText('sub-vix',      safeSubInd(sub.vix));
+  setText('sub-fii',      safeSubInd(sub.fii));
+  setText('sub-skew',     safeSubInd(sub.skew));
+  setText('sub-momentum', safeSubInd(sub.momentum));
+  setText('sub-trin',     safeSubInd(sub.trin));
+  setText('sub-extrema',  safeSubInd(sub.extrema));
 }
 
-// --- Signal history table ---
-function renderTable(signals) {
-  const tbody = document.getElementById("signals-tbody");
-  if (!tbody || !signals?.length) return;
+function renderAnalysis(s) {
+  setText('analysis-text', s.analysis || '—');
 
-  const rows = [...signals].reverse().slice(0, 60);
-  tbody.innerHTML = rows.map((r) => {
-    const cssClass = SIGNAL_CSS_CLASS[r.signal] ?? "";
-    const nifty = r.nifty50 != null
-      ? r.nifty50.toLocaleString("en-IN")
-      : (r.nifty != null ? Number(r.nifty).toLocaleString("en-IN") : "—");
-    return `
-      <tr>
-        <td>${r.date}</td>
-        <td><strong>${r.mmi.toFixed(1)}</strong></td>
-        <td>${r.interpretation}</td>
-        <td><span class="badge ${cssClass}">${r.signal}</span></td>
-        <td>${nifty !== "—" ? `₹${nifty}` : "—"}</td>
-      </tr>`;
-  }).join("");
-}
-
-// --- Updated timestamp ---
-function renderUpdatedAt(iso) {
-  const el2 = document.getElementById("updated-at");
-  if (!el2 || !iso) return;
-  const d = new Date(iso);
-  el2.textContent = `Updated: ${d.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} IST`;
-}
-
-// ---------------------------------------------------------------------------
-// Loading / error states
-// ---------------------------------------------------------------------------
-
-function showLoading() {
-  const main = document.getElementById("main-content");
-  if (main) main.style.display = "none";
-  const s = document.getElementById("state-loading");
-  if (s) s.style.display = "flex";
-}
-
-function hideLoading() {
-  const s = document.getElementById("state-loading");
-  if (s) s.style.display = "none";
-  const main = document.getElementById("main-content");
-  if (main) main.style.display = "block";
-}
-
-function showError(msg) {
-  const s = document.getElementById("state-loading");
-  if (s) s.style.display = "none";
-  const e = document.getElementById("state-error");
-  if (e) {
-    e.style.display = "block";
-    const em = e.querySelector(".error-message");
-    if (em) em.textContent = msg;
+  // Tint the left border with the signal colour
+  const card = document.querySelector('#analysis-card .card');
+  if (card && s.color) {
+    card.style.borderLeftColor = s.color;
   }
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function el(id) { return document.getElementById(id); }
-
-function setOptional(id, val) {
-  const node = document.getElementById(id);
-  if (node) node.textContent = val;
+function renderHeader(s) {
+  const ts = s.lastUpdated || s.date || '';
+  setText('header-updated', ts ? formatDate(s.date) : '—');
 }
 
-async function apiFetch(path) {
-  const res = await fetch(API(path));
-  if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
-  const json = await res.json();
-  if (!json.ok) throw new Error(json.error ?? "API error");
-  return json;
+// ── Chart ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Render a 30-day line chart using Chart.js 4 + annotation plugin.
+ * history is newest-first; chart needs oldest-first → slice(0,30).reverse()
+ */
+function renderChart(history) {
+  if (!history.length) return;
+
+  // Up to 30 newest entries, oldest-first for chart
+  const slice   = history.slice(0, 30).reverse();
+  const labels  = slice.map(r => {
+    const d = new Date(r.date + 'T00:00:00');
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+  });
+  const values  = slice.map(r => parseFloat(r.mmi));
+  const colors  = slice.map(r => zoneColor(r.zone));
+
+  const ctx = document.getElementById('mmi-chart');
+  if (!ctx) return;
+
+  if (mmiChart) {
+    mmiChart.destroy();
+    mmiChart = null;
+  }
+
+  // Zone band annotations (10% opacity fills)
+  const annotations = {
+    extreme_fear_band: {
+      type: 'box', yMin: 0, yMax: 30,
+      backgroundColor: 'rgba(22,163,74,0.10)', borderWidth: 0,
+      label: { display: true, content: 'Extreme Fear', position: { x: 'start', y: 'center' }, color: '#22c55e', font: { size: 9 } },
+    },
+    fear_band: {
+      type: 'box', yMin: 30, yMax: 50,
+      backgroundColor: 'rgba(34,197,94,0.08)', borderWidth: 0,
+      label: { display: true, content: 'Fear', position: { x: 'start', y: 'center' }, color: '#4ade80', font: { size: 9 } },
+    },
+    greed_band: {
+      type: 'box', yMin: 50, yMax: 70,
+      backgroundColor: 'rgba(245,158,11,0.08)', borderWidth: 0,
+      label: { display: true, content: 'Greed', position: { x: 'start', y: 'center' }, color: '#fbbf24', font: { size: 9 } },
+    },
+    extreme_greed_band: {
+      type: 'box', yMin: 70, yMax: 80,
+      backgroundColor: 'rgba(249,115,22,0.10)', borderWidth: 0,
+      label: { display: true, content: 'Ext. Greed', position: { x: 'start', y: 'center' }, color: '#fb923c', font: { size: 9 } },
+    },
+    high_extreme_greed_band: {
+      type: 'box', yMin: 80, yMax: 100,
+      backgroundColor: 'rgba(220,38,38,0.10)', borderWidth: 0,
+      label: { display: true, content: 'High Ext. Greed', position: { x: 'start', y: 'center' }, color: '#f87171', font: { size: 9 } },
+    },
+  };
+
+  mmiChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'MMI',
+        data: values,
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245,158,11,0.08)',
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointBackgroundColor: colors,
+        pointBorderColor: colors,
+        pointHoverRadius: 6,
+        tension: 0.35,
+        fill: false,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: {
+          grid:  { color: 'rgba(51,65,85,0.6)' },
+          ticks: { color: '#94a3b8', font: { size: 10 }, maxRotation: 45 },
+        },
+        y: {
+          min: 0, max: 100,
+          grid:  { color: 'rgba(51,65,85,0.6)' },
+          ticks: { color: '#94a3b8', font: { size: 10 }, stepSize: 10 },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e293b',
+          borderColor: '#334155',
+          borderWidth: 1,
+          titleColor: '#f1f5f9',
+          bodyColor: '#94a3b8',
+          padding: 10,
+          callbacks: {
+            label: (ctx) => {
+              const r = slice[ctx.dataIndex] || {};
+              return [
+                'MMI: ' + (ctx.raw || 0).toFixed(1),
+                'Zone: ' + zoneLabel(r.zone),
+                'Signal: ' + (r.signal || '—'),
+              ];
+            },
+          },
+        },
+        annotation: { annotations },
+      },
+    },
+  });
 }
+
+// ── History Table ──────────────────────────────────────────────────────────────
+
+function renderTable(history) {
+  const tbody = document.getElementById('history-tbody');
+  if (!tbody) return;
+
+  // Show up to 30 newest (history is already newest-first)
+  const rows = history.slice(0, 30);
+
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">No history available yet.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const delta     = fmtDelta(r.mmiDelta);
+    const badgeCol  = zoneColor(r.zone);
+    const momLabel  = MOMENTUM_LABELS[r.momentum] || (r.momentum || '—').replace(/_/g, ' ');
+
+    return `<tr>
+      <td>${formatDate(r.date)}</td>
+      <td class="mmi-cell">${fmt(r.mmi, 1)}</td>
+      <td><span class="zone-badge" style="background:${badgeCol}">${zoneLabel(r.zone)}</span></td>
+      <td>${r.emoji || ''} ${r.signal || '—'}</td>
+      <td class="${delta.cls}">${delta.text}</td>
+      <td>${momLabel}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', init);

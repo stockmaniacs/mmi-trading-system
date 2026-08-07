@@ -1,151 +1,142 @@
 /**
  * gauge.js
- * Draws a semicircular MMI gauge on a <canvas> element.
- * No external dependencies.
+ * Renders an SVG semicircle Market Mood Index gauge.
+ * Exposes window.renderGauge — called directly from dashboard.js.
  *
- * Usage:
- *   import { drawGauge } from './gauge.js';
- *   drawGauge(canvasElement, mmiValue);   // mmiValue 0–100
+ * Gauge geometry
+ * ─────────────────────────────────────────────────────────────
+ * ViewBox  : 0 0 300 160    (width × height)
+ * Center   : cx=150, cy=150  (sits at the bottom of the viewBox)
+ * Radius   : 120px
+ *
+ * Angle mapping (degrees, standard Math convention)
+ *   MMI 0   →  180°  →  left  → (30,  150)
+ *   MMI 50  →  270°  →  top   → (150,  30)
+ *   MMI 100 →  360°  →  right → (270, 150)
+ *   Formula : angleDeg = 180 + (mmi / 100) * 180
+ *
+ * SVG arc sweep-flag=1 traces clockwise in SVG (y-down), which goes
+ * UPWARD visually from left through the top to right.  ✓
  */
 
-// Zone colour stops along the 0–100 arc
-const ZONE_STOPS = [
-  { pct: 0,    color: "#16a34a" }, // extreme_fear     (green)
-  { pct: 0.30, color: "#65a30d" }, // fear             (lime)
-  { pct: 0.50, color: "#ca8a04" }, // greed            (amber)
-  { pct: 0.69, color: "#ea580c" }, // extreme_greed    (orange)
-  { pct: 0.80, color: "#dc2626" }, // high_extr. greed (red)
-  { pct: 1.00, color: "#dc2626" }, // end sentinel
-];
+(function () {
+  'use strict';
 
-/**
- * @param {HTMLCanvasElement} canvas
- * @param {number} value  0–100
- */
-export function drawGauge(canvas, value) {
-  const dpr = window.devicePixelRatio || 1;
-  const W = canvas.clientWidth || 300;
-  const H = Math.round(W * 0.55);
+  /* ── Constants ─────────────────────────────────────────────── */
 
-  canvas.width  = W * dpr;
-  canvas.height = H * dpr;
+  var CX = 150, CY = 150, R = 120, SW = 16; // cx, cy, radius, strokeWidth
 
-  const ctx = canvas.getContext("2d");
-  ctx.scale(dpr, dpr);
+  var SEGMENTS = [
+    { from: 0,  to: 30,  color: '#16a34a' }, // extreme_fear   — green
+    { from: 30, to: 50,  color: '#22c55e' }, // fear           — light green
+    { from: 50, to: 70,  color: '#f59e0b' }, // greed          — amber
+    { from: 70, to: 80,  color: '#f97316' }, // extreme_greed  — orange
+    { from: 80, to: 100, color: '#dc2626' }, // high_extr_greed— red
+  ];
 
-  const cx = W / 2;
-  const cy = H * 0.88;          // centre sits near the bottom for a half-circle
-  const R  = W * 0.42;
-  const thick = R * 0.18;
+  var ZONE_LABELS = {
+    extreme_fear:       'Extreme Fear',
+    fear:               'Fear',
+    greed:              'Greed',
+    extreme_greed:      'Extreme Greed',
+    high_extreme_greed: 'High Extreme Greed',
+  };
 
-  const START_ANGLE = Math.PI;        // 9 o'clock  (left)
-  const END_ANGLE   = 2 * Math.PI;   // 3 o'clock  (right)
-  const ARC_SPAN    = Math.PI;       // 180°
+  /* ── Helpers ───────────────────────────────────────────────── */
 
-  ctx.clearRect(0, 0, W, H);
-
-  // --- Background track ---
-  ctx.beginPath();
-  ctx.arc(cx, cy, R, START_ANGLE, END_ANGLE);
-  ctx.lineWidth = thick;
-  ctx.lineCap = "butt";
-  ctx.strokeStyle = "#1e293b";
-  ctx.stroke();
-
-  // --- Coloured zone arc (gradient-like segments) ---
-  for (let i = 0; i < ZONE_STOPS.length - 1; i++) {
-    const s = ZONE_STOPS[i];
-    const e = ZONE_STOPS[i + 1];
-    const a1 = START_ANGLE + s.pct * ARC_SPAN;
-    const a2 = START_ANGLE + e.pct * ARC_SPAN;
-
-    const grad = ctx.createLinearGradient(
-      cx + R * Math.cos(a1), cy + R * Math.sin(a1),
-      cx + R * Math.cos(a2), cy + R * Math.sin(a2)
-    );
-    grad.addColorStop(0, s.color);
-    grad.addColorStop(1, e.color);
-
-    ctx.beginPath();
-    ctx.arc(cx, cy, R, a1, a2);
-    ctx.lineWidth = thick;
-    ctx.lineCap = "butt";
-    ctx.strokeStyle = grad;
-    ctx.stroke();
+  /** Convert MMI (0-100) to SVG angle in degrees. */
+  function mmiToDeg(mmi) {
+    return 180 + (mmi / 100) * 180;
   }
 
-  // --- Needle ---
-  const clampedPct = Math.max(0, Math.min(100, value)) / 100;
-  const needleAngle = START_ANGLE + clampedPct * ARC_SPAN;
-  const needleLen   = R * 0.82;
-  const hubR        = thick * 0.7;
-
-  // Shadow for depth
-  ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,.5)";
-  ctx.shadowBlur  = 6;
-  ctx.shadowOffsetY = 2;
-
-  ctx.beginPath();
-  ctx.moveTo(cx, cy);
-  ctx.lineTo(
-    cx + needleLen * Math.cos(needleAngle),
-    cy + needleLen * Math.sin(needleAngle)
-  );
-  ctx.lineWidth = thick * 0.22;
-  ctx.lineCap = "round";
-  ctx.strokeStyle = "#f1f5f9";
-  ctx.stroke();
-  ctx.restore();
-
-  // Hub circle
-  ctx.beginPath();
-  ctx.arc(cx, cy, hubR, 0, 2 * Math.PI);
-  ctx.fillStyle = "#f1f5f9";
-  ctx.fill();
-
-  // --- Zone tick marks ---
-  const ticks = [0, 30, 50, 69, 80, 100];
-  ticks.forEach((t) => {
-    const pct = t / 100;
-    const a = START_ANGLE + pct * ARC_SPAN;
-    const inner = R - thick / 2 - 6;
-    const outer = R + thick / 2 + 6;
-
-    ctx.beginPath();
-    ctx.moveTo(cx + inner * Math.cos(a), cy + inner * Math.sin(a));
-    ctx.lineTo(cx + outer * Math.cos(a), cy + outer * Math.sin(a));
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = "rgba(255,255,255,.25)";
-    ctx.stroke();
-
-    // Label
-    const labelR = R + thick / 2 + 18;
-    const lx = cx + labelR * Math.cos(a);
-    const ly = cy + labelR * Math.sin(a);
-    ctx.fillStyle = "rgba(255,255,255,.45)";
-    ctx.font = `${Math.round(W * 0.035)}px Inter,system-ui,sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(String(t), lx, ly);
-  });
-}
-
-/**
- * Animate the needle from `from` to `to` over `duration` ms.
- *
- * @param {HTMLCanvasElement} canvas
- * @param {number} from   start value 0–100
- * @param {number} to     end value 0–100
- * @param {number} [duration=700]
- */
-export function animateGauge(canvas, from, to, duration = 700) {
-  const start = performance.now();
-  function frame(now) {
-    const t = Math.min((now - start) / duration, 1);
-    const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
-    drawGauge(canvas, from + (to - from) * eased);
-    if (t < 1) requestAnimationFrame(frame);
+  /** Point on the circle at the given angle (degrees). */
+  function pt(angleDeg) {
+    var rad = angleDeg * Math.PI / 180;
+    return [
+      +(CX + R * Math.cos(rad)).toFixed(2),
+      +(CY + R * Math.sin(rad)).toFixed(2),
+    ];
   }
-  requestAnimationFrame(frame);
-}
+
+  /**
+   * SVG arc path from mmiStart to mmiEnd along the gauge semicircle.
+   * Uses sweep-flag=1 (upward path) and large-arc-flag=0 for spans < 180°.
+   */
+  function arcPath(mmiStart, mmiEnd) {
+    var a1 = mmiToDeg(mmiStart);
+    var a2 = mmiToDeg(mmiEnd);
+    var p1 = pt(a1);
+    var p2 = pt(a2);
+    var span = a2 - a1;                    // always positive here
+    var large = span >= 180 ? 1 : 0;      // full background needs large=1
+    return 'M ' + p1[0] + ',' + p1[1] +
+           ' A ' + R + ',' + R + ' 0 ' + large + ',1 ' +
+           p2[0] + ',' + p2[1];
+  }
+
+  /* ── Public API ────────────────────────────────────────────── */
+
+  /**
+   * Render the gauge into <div id="mmi-gauge">.
+   * Clears any previous SVG first — safe to call repeatedly.
+   *
+   * @param {number} mmi   — current MMI value (0–100)
+   * @param {string} zone  — zone key, e.g. "extreme_fear"
+   * @param {string} color — signal hex colour, e.g. "#f59e0b"
+   */
+  window.renderGauge = function renderGauge(mmi, zone, color) {
+    var el = document.getElementById('mmi-gauge');
+    if (!el) return;
+
+    var v = Math.max(0, Math.min(100, +mmi || 0)); // clamped value
+
+    /* Background track */
+    var bg = '<path d="' + arcPath(0, 100) + '"' +
+             ' fill="none" stroke="#334155"' +
+             ' stroke-width="' + SW + '" stroke-linecap="round"/>';
+
+    /* Coloured zone segments */
+    var segs = SEGMENTS.map(function (s) {
+      return '<path d="' + arcPath(s.from, s.to) + '"' +
+             ' fill="none" stroke="' + s.color + '"' +
+             ' stroke-width="' + SW + '" stroke-linecap="round"/>';
+    }).join('');
+
+    /* Needle */
+    var tip   = pt(mmiToDeg(v));
+    var tipX  = tip[0], tipY = tip[1];
+    var needle =
+      '<line x1="' + CX + '" y1="' + CY + '"' +
+            ' x2="' + tipX + '" y2="' + tipY + '"' +
+            ' stroke="white" stroke-width="2.5" stroke-linecap="round"/>' +
+      '<circle cx="' + tipX + '" cy="' + tipY + '" r="5" fill="white"/>';
+
+    /* Hub */
+    var hub = '<circle cx="' + CX + '" cy="' + CY + '" r="7" fill="white"/>';
+
+    /* Labels */
+    var label = ZONE_LABELS[zone] || (zone || '').replace(/_/g, ' ');
+    var valueY = CY - 30;
+    var labelY = CY - 12;
+    var labels =
+      '<text x="' + CX + '" y="' + valueY + '"' +
+            ' text-anchor="middle" dominant-baseline="middle"' +
+            ' fill="white" font-size="26" font-weight="700"' +
+            ' font-family="system-ui,sans-serif">' +
+            v.toFixed(1) +
+      '</text>' +
+      '<text x="' + CX + '" y="' + labelY + '"' +
+            ' text-anchor="middle" dominant-baseline="middle"' +
+            ' fill="#94a3b8" font-size="10.5"' +
+            ' font-family="system-ui,sans-serif">' +
+            label +
+      '</text>';
+
+    el.innerHTML =
+      '<svg viewBox="0 0 300 160" xmlns="http://www.w3.org/2000/svg"' +
+           ' role="img" aria-label="MMI Gauge: ' + v.toFixed(1) + '">' +
+        bg + segs + needle + hub + labels +
+      '</svg>';
+  };
+
+}());
