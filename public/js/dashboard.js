@@ -14,7 +14,7 @@
 
 // ── Config ─────────────────────────────────────────────────────────────────
 
-const API_BASE    = 'https://mmi-worker.YOUR-SUBDOMAIN.workers.dev';
+const API_BASE    = 'https://mmi-worker.stockmaniacs.workers.dev';
 const HISTORY_URL = 'https://raw.githubusercontent.com/stockmaniacs/mmi-trading-system/main/data/signals.json';
 
 // ── Zone meta ───────────────────────────────────────────────────────────────
