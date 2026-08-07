@@ -1,45 +1,105 @@
 /**
  * fetchMMI.js
- * Fetches the current Market Mood Index from TickerTape.
+ * Fetches the current Market Mood Index from TickerTape with a 10-second timeout.
+ *
+ * Expected API response shape (api.tickertape.in/mmi/now):
+ * {
+ *   "data": {
+ *     "currentvalue": 62.3,
+ *     "indicator":    "Greed",
+ *     "raw":          { ... },      // sub-indicator raw values
+ *     "vix":      12.4,
+ *     "fii":      0.45,
+ *     "skew":    -0.12,
+ *     "momentum": 0.67,
+ *     "trin":     0.98,
+ *     "extrema":  0.30,
+ *     "fma":      62.1,
+ *     "sma":      61.8,
+ *     "lastday":   { "date": "2026-08-06", "indicator": 60.1 },
+ *     "lastweek":  { "date": "2026-07-31", "indicator": 58.4 },
+ *     "lastmonth": { "date": "2026-07-07", "indicator": 55.0 }
+ *   }
+ * }
+ *
+ * Throws "MMI_FETCH_FAILED: <reason>" on any error.
  */
 
-const MMI_API_URL = "https://api.tickertape.in/mmi/now";
+const MMI_URL    = "https://api.tickertape.in/mmi/now";
+const TIMEOUT_MS = 10_000;
 
 /**
- * @returns {{ mmi: number, interpretation: string }}
+ * Fetch and return the current MMI reading with historical comparisons.
+ *
+ * @returns {Promise<{
+ *   date: string,
+ *   mmi: number,
+ *   indicator: string,
+ *   raw: object,
+ *   vix: number,
+ *   fii: number,
+ *   skew: number,
+ *   momentum: number,
+ *   trin: number,
+ *   extrema: number,
+ *   fma: number,
+ *   sma: number,
+ *   lastday:   { date: string, mmi: number },
+ *   lastweek:  { date: string, mmi: number },
+ *   lastmonth: { date: string, mmi: number },
+ * }>}
  */
 export async function fetchMMI() {
-  const res = await fetch(MMI_API_URL, {
-    headers: { "Accept": "application/json" },
-    cf: { cacheTtl: 300, cacheEverything: true },
-  });
+  const controller = new AbortController();
+  const timer      = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-  if (!res.ok) {
-    throw new Error(`MMI API returned ${res.status}: ${await res.text()}`);
+  try {
+    const res = await fetch(MMI_URL, {
+      headers: { Accept: "application/json" },
+      signal:  controller.signal,
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} ${res.statusText}`);
+    }
+
+    const json = await res.json();
+    const d    = json?.data ?? {};
+
+    if (typeof d.currentvalue !== "number") {
+      throw new Error(
+        `Unexpected response shape — missing data.currentvalue. ` +
+        `Keys found: ${Object.keys(d).join(", ")}`
+      );
+    }
+
+    // Today's date in IST
+    const today = new Date(Date.now() + 5.5 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+
+    return {
+      date:      today,
+      mmi:       d.currentvalue,
+      indicator: d.indicator,
+      raw:       d.raw ?? {},
+      vix:       d.vix,
+      fii:       d.fii,
+      skew:      d.skew,
+      momentum:  d.momentum,
+      trin:      d.trin,
+      extrema:   d.extrema,
+      fma:       d.fma,
+      sma:       d.sma,
+      lastday:   { date: d.lastday?.date,   mmi: d.lastday?.indicator   },
+      lastweek:  { date: d.lastweek?.date,  mmi: d.lastweek?.indicator  },
+      lastmonth: { date: d.lastmonth?.date, mmi: d.lastmonth?.indicator },
+    };
+
+  } catch (err) {
+    // Re-throw with a stable prefix so callers can match it
+    throw new Error(`MMI_FETCH_FAILED: ${err.message}`);
+  } finally {
+    clearTimeout(timer);
   }
-
-  const json = await res.json();
-
-  // TickerTape shape: { data: { mmi: number, label: string, ... } }
-  const mmi = json?.data?.mmi ?? json?.mmi;
-  const interpretation = json?.data?.label ?? json?.label ?? deriveLabel(mmi);
-
-  if (typeof mmi !== "number") {
-    throw new Error(`Unexpected MMI response shape: ${JSON.stringify(json)}`);
-  }
-
-  return { mmi: Math.round(mmi * 100) / 100, interpretation };
-}
-
-/**
- * Fallback label derivation when the API doesn't return one.
- * @param {number} mmi
- * @returns {string}
- */
-function deriveLabel(mmi) {
-  if (mmi <= 30) return "Extreme Fear";
-  if (mmi <= 50) return "Fear";
-  if (mmi <= 69) return "Greed";
-  if (mmi <= 80) return "Extreme Greed";
-  return "High Extreme Greed";
 }

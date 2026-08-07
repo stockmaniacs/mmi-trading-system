@@ -1,58 +1,108 @@
 /**
  * fetchIndices.js
- * Fetches Nifty 50 and Nifty Next 50 closing prices via the NSE India JSON API.
- * Uses Cloudflare's cache to avoid hammering NSE on repeated invocations.
+ * Fetches Nifty 50 and Nifty Next 50 closing prices via Yahoo Finance v8.
+ *
+ * Endpoints:
+ *   Nifty 50:      https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI?interval=1d&range=1d
+ *   Nifty Next 50: https://query1.finance.yahoo.com/v8/finance/chart/NIFTYNXT50.NS?interval=1d&range=1d
+ *
+ * Response shape (relevant excerpt):
+ * {
+ *   "chart": {
+ *     "result": [{
+ *       "meta": {
+ *         "symbol":             "^NSEI",
+ *         "regularMarketPrice": 24850.5,
+ *         ...
+ *       }
+ *     }]
+ *   }
+ * }
+ *
+ * If either fetch fails, null is returned for that index — the cron job continues.
  */
 
-const NSE_API_BASE = "https://www.nseindia.com/api";
-const INDEX_HEADERS = {
-  "Accept": "application/json, text/plain, */*",
-  "Referer": "https://www.nseindia.com/",
-  "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+const YAHOO_BASE  = "https://query1.finance.yahoo.com/v8/finance/chart";
+const INDICES = [
+  {
+    key:    "nifty50",
+    url:    `${YAHOO_BASE}/%5ENSEI?interval=1d&range=1d`,
+    symbol: "^NSEI",
+  },
+  {
+    key:    "niftyNext50",
+    url:    `${YAHOO_BASE}/NIFTYNXT50.NS?interval=1d&range=1d`,
+    symbol: "NIFTYNXT50.NS",
+  },
+];
+
+const FETCH_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+  Accept:       "application/json",
 };
 
 /**
- * @returns {{ nifty50: number, niftyNext50: number }}
+ * Fetch Nifty 50 and Nifty Next 50 closing prices.
+ *
+ * @returns {Promise<{
+ *   nifty50:    { close: number, symbol: string } | null,
+ *   niftyNext50:{ close: number, symbol: string } | null,
+ * }>}
  */
 export async function fetchIndices() {
-  const [nifty50, niftyNext50] = await Promise.all([
-    fetchIndexClose("NIFTY 50"),
-    fetchIndexClose("NIFTY NEXT 50"),
-  ]);
-  return { nifty50, niftyNext50 };
+  const results = await Promise.all(
+    INDICES.map(({ key, url, symbol }) => fetchSingleIndex(url, symbol, key))
+  );
+
+  return {
+    nifty50:     results[0],
+    niftyNext50: results[1],
+  };
 }
 
+// ---------------------------------------------------------------------------
+// Internal helper
+// ---------------------------------------------------------------------------
+
 /**
- * Fetch the last closing price for a named NSE index.
- * @param {string} indexName  e.g. "NIFTY 50"
- * @returns {Promise<number>}
+ * Fetch a single Yahoo Finance chart and extract regularMarketPrice.
+ * Returns null on any error (non-throwing by design).
+ *
+ * @param {string} url
+ * @param {string} fallbackSymbol  - used in logs / returned object when meta.symbol absent
+ * @param {string} logKey          - label for console messages
+ * @returns {Promise<{ close: number, symbol: string }|null>}
  */
-async function fetchIndexClose(indexName) {
-  const url = `${NSE_API_BASE}/allIndices`;
-  const res = await fetch(url, {
-    headers: INDEX_HEADERS,
-    cf: { cacheTtl: 600, cacheEverything: true },
-  });
+async function fetchSingleIndex(url, fallbackSymbol, logKey) {
+  try {
+    const res = await fetch(url, { headers: FETCH_HEADERS });
 
-  if (!res.ok) {
-    throw new Error(`NSE indices API returned ${res.status}`);
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} ${res.statusText}`);
+    }
+
+    const json  = await res.json();
+    const error = json?.chart?.error;
+    if (error) {
+      throw new Error(`Yahoo error: ${JSON.stringify(error)}`);
+    }
+
+    const meta = json?.chart?.result?.[0]?.meta;
+    if (!meta) {
+      throw new Error("chart.result[0].meta missing from response");
+    }
+
+    const close = meta.regularMarketPrice;
+    if (typeof close !== "number") {
+      throw new Error(`regularMarketPrice is not a number: ${close}`);
+    }
+
+    const symbol = meta.symbol ?? fallbackSymbol;
+    console.log(`[fetchIndices] ${logKey} (${symbol}): ${close}`);
+    return { close, symbol };
+
+  } catch (err) {
+    console.error(`[fetchIndices] Failed to fetch ${logKey} (${fallbackSymbol}): ${err.message}`);
+    return null;
   }
-
-  const json = await res.json();
-  const list = json?.data ?? [];
-  const entry = list.find((i) => i.indexSymbol === indexName || i.index === indexName);
-
-  if (!entry) {
-    throw new Error(`Index "${indexName}" not found in NSE response`);
-  }
-
-  // last = last traded price; previousClose as fallback
-  const price = entry.last ?? entry.previousClose;
-  if (typeof price !== "number") {
-    throw new Error(`No numeric price for ${indexName}: ${JSON.stringify(entry)}`);
-  }
-
-  return Math.round(price * 100) / 100;
 }

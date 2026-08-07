@@ -1,52 +1,125 @@
 /**
  * fetchHolidays.js
- * Fetches NSE trading holidays from the Upstox API and caches them
+ * Fetches NSE equity trading holidays from the Upstox API and caches them
  * in Cloudflare KV with a 30-day TTL.
  *
- * KV key: "holidays:<YYYY>"  →  JSON array of "YYYY-MM-DD" strings
+ * Upstox response shape:
+ * {
+ *   "status": "success",
+ *   "data": [
+ *     { "date": "15-Jan-2026", "description": "...", "open": "NSE_EQ", "closed": "NSE_EQ,BSE_EQ" },
+ *     ...
+ *   ]
+ * }
+ *
+ * Only dates where "NSE_EQ" appears in the `closed` field are kept.
  */
 
-const UPSTOX_HOLIDAY_URL =
-  "https://api.upstox.com/v2/market/holidays";
-const KV_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days
+const UPSTOX_HOLIDAY_URL = "https://api.upstox.com/v2/market/holidays";
+const KV_TTL = 2592000; // 30 days in seconds
+
+/** Map 3-letter month abbreviations → zero-padded month numbers */
+const MONTH_MAP = {
+  Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06",
+  Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12",
+};
+
+// ---------------------------------------------------------------------------
+// Exports
+// ---------------------------------------------------------------------------
 
 /**
- * Returns a Set of holiday date strings ("YYYY-MM-DD") for the given year.
+ * Return NSE equity holiday dates for the current IST year.
  * Reads from KV first; falls back to Upstox API on cache miss.
+ * On API failure, logs the error and returns [] so the Worker can still run
+ * using the weekend-only check.
  *
- * @param {KVNamespace} kv         - Cloudflare KV binding (MMI_KV)
- * @param {string}      accessToken - Upstox OAuth access token
- * @param {number}      [year]      - defaults to current IST year
- * @returns {Promise<Set<string>>}
+ * @param {object} env - Cloudflare Worker env (needs MMI_KV, UPSTOX_ACCESS_TOKEN)
+ * @returns {Promise<string[]>}  array of "YYYY-MM-DD" strings
  */
-export async function getHolidays(kv, accessToken, year) {
-  const y = year ?? currentISTYear();
-  const kvKey = `holidays:${y}`;
+export async function getHolidays(env) {
+  const year   = currentISTYear();
+  const kvKey  = `holidays:${year}`;
 
-  // --- KV cache hit ---
-  const cached = await kv.get(kvKey);
+  // --- Cache hit ---
+  const cached = await env.MMI_KV.get(kvKey);
   if (cached) {
-    return new Set(JSON.parse(cached));
+    console.log(`[fetchHolidays] KV cache hit for ${kvKey}`);
+    return JSON.parse(cached);
   }
 
   // --- Cache miss: fetch from Upstox ---
-  const holidays = await fetchFromUpstox(accessToken, y);
-  await kv.put(kvKey, JSON.stringify(holidays), { expirationTtl: KV_TTL_SECONDS });
-  return new Set(holidays);
+  console.log(`[fetchHolidays] KV cache miss — fetching Upstox holidays for ${year}`);
+  try {
+    const res = await fetch(UPSTOX_HOLIDAY_URL, {
+      headers: {
+        Accept:           "application/json",
+        Authorization:    `Bearer ${env.UPSTOX_ACCESS_TOKEN}`,
+        "Api-Version":    "2.0",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+    }
+
+    const json    = await res.json();
+    const rawList = Array.isArray(json?.data) ? json.data : [];
+
+    // Keep only NSE equity closures and normalise date strings
+    const holidays = rawList
+      .filter((h) => {
+        const closedStr = String(h.closed ?? "");
+        return closedStr.split(",").map((s) => s.trim()).includes("NSE_EQ");
+      })
+      .map((h) => parseUpstoxDate(h.date))
+      .filter(Boolean)
+      .sort();
+
+    const deduped = [...new Set(holidays)];
+
+    await env.MMI_KV.put(kvKey, JSON.stringify(deduped), {
+      expirationTtl: KV_TTL,
+    });
+
+    console.log(
+      `[fetchHolidays] Cached ${deduped.length} NSE equity holidays for ${year}: ` +
+      deduped.slice(0, 3).join(", ") + (deduped.length > 3 ? " …" : "")
+    );
+    return deduped;
+
+  } catch (err) {
+    console.error(`[fetchHolidays] Upstox API failed — ${err.message}. Using empty holiday list.`);
+    return [];
+  }
 }
 
 /**
- * Returns true when `dateStr` ("YYYY-MM-DD") is a trading holiday.
- *
- * @param {KVNamespace} kv
- * @param {string}      accessToken
- * @param {string}      dateStr
- * @returns {Promise<boolean>}
+ * Returns true if dateStr ("YYYY-MM-DD") is a known NSE equity holiday.
+ * @param {string}   dateStr  - "YYYY-MM-DD"
+ * @param {string[]} holidays - result of getHolidays()
  */
-export async function isHoliday(kv, accessToken, dateStr) {
-  const year = parseInt(dateStr.slice(0, 4), 10);
-  const holidays = await getHolidays(kv, accessToken, year);
-  return holidays.has(dateStr);
+export function isMarketHoliday(dateStr, holidays) {
+  return holidays.includes(dateStr);
+}
+
+/**
+ * Returns true if dateStr falls on Saturday (6) or Sunday (0) in UTC.
+ * Dates are passed as "YYYY-MM-DD"; appending "T00:00:00Z" avoids TZ drift.
+ * @param {string} dateStr - "YYYY-MM-DD"
+ */
+export function isWeekend(dateStr) {
+  const day = new Date(`${dateStr}T00:00:00Z`).getUTCDay();
+  return day === 0 || day === 6;
+}
+
+/**
+ * Returns true only when the date is neither a weekend nor a holiday.
+ * @param {string}   dateStr  - "YYYY-MM-DD"
+ * @param {string[]} holidays - result of getHolidays()
+ */
+export function isMarketOpen(dateStr, holidays) {
+  return !isWeekend(dateStr) && !isMarketHoliday(dateStr, holidays);
 }
 
 // ---------------------------------------------------------------------------
@@ -54,80 +127,35 @@ export async function isHoliday(kv, accessToken, dateStr) {
 // ---------------------------------------------------------------------------
 
 /**
- * Fetch holiday list from Upstox and normalise to "YYYY-MM-DD" strings.
- * Upstox returns holidays for both NSE and BSE; we de-duplicate by date.
- *
- * @param {string} accessToken
- * @param {number} year
- * @returns {Promise<string[]>}
- */
-async function fetchFromUpstox(accessToken, year) {
-  // Upstox v2 endpoint accepts optional ?year= param
-  const url = `${UPSTOX_HOLIDAY_URL}?year=${year}`;
-
-  const res = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${accessToken}`,
-      "Api-Version": "2.0",
-    },
-  });
-
-  if (!res.ok) {
-    throw new Error(`Upstox holidays API returned ${res.status}: ${await res.text()}`);
-  }
-
-  const json = await res.json();
-
-  // Upstox shape: { status: "success", data: [ { date: "2024-01-26", ... }, ... ] }
-  const raw = json?.data ?? [];
-  if (!Array.isArray(raw)) {
-    throw new Error(`Unexpected Upstox holidays shape: ${JSON.stringify(json)}`);
-  }
-
-  // Normalise: keep only NSE segment holidays, extract date strings
-  const dates = raw
-    .filter((h) => {
-      // Some responses have a "closed_exchanges" array; keep if NSE is listed
-      if (Array.isArray(h.closed_exchanges)) {
-        return h.closed_exchanges.includes("NSE");
-      }
-      return true; // include all if no exchange filter present
-    })
-    .map((h) => normaliseDate(h.date ?? h.holiday_date))
-    .filter(Boolean);
-
-  // De-duplicate
-  return [...new Set(dates)].sort();
-}
-
-/**
- * Normalise various date formats to "YYYY-MM-DD".
- * Handles ISO strings, "DD-MM-YYYY", and "DD/MM/YYYY".
- *
+ * Parse Upstox date "15-Jan-2026" → "2026-01-15".
+ * Returns null on unrecognised format.
  * @param {string|undefined} raw
  * @returns {string|null}
  */
-function normaliseDate(raw) {
+function parseUpstoxDate(raw) {
   if (!raw) return null;
   const s = String(raw).trim();
 
-  // Already ISO: "2024-01-26" or "2024-01-26T..."
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  // Primary format: "15-Jan-2026"
+  const m = s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
+  if (m) {
+    const month = MONTH_MAP[m[2]];
+    if (!month) return null;
+    return `${m[3]}-${month}-${m[1].padStart(2, "0")}`;
+  }
 
-  // "26-01-2024" or "26/01/2024"
-  const match = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})$/);
-  if (match) return `${match[3]}-${match[2]}-${match[1]}`;
+  // Fallback: already "YYYY-MM-DD"
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
 
+  console.warn(`[fetchHolidays] Unrecognised date format: "${s}"`);
   return null;
 }
 
 /**
- * Current year in IST (UTC+5:30).
+ * Returns the current year in IST (UTC+5:30).
  * @returns {number}
  */
 function currentISTYear() {
-  const now = new Date();
-  const ist = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
+  const ist = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
   return ist.getUTCFullYear();
 }

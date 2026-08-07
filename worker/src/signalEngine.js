@@ -1,151 +1,283 @@
 /**
  * signalEngine.js
- * Maps an MMI value to a trading zone, signal, and action recommendation.
- * Also decides whether a signal change warrants an email alert.
+ * Maps MMI data + index data into a fully-annotated trading signal.
+ *
+ * Export: computeSignal(mmiData, indicesData, previousMMI)
  */
 
-/**
- * Zone definitions in ascending MMI order.
- * Each band is [min, max] inclusive.
- */
+// ---------------------------------------------------------------------------
+// Zone table
+// ---------------------------------------------------------------------------
+
 const ZONES = [
   {
-    min: 0,
-    max: 30,
-    zone: "extreme_fear",
-    label: "Extreme Fear",
-    signal: "STRONG BUY",
-    action:
-      "Deploy aggressively. Extreme Fear — rare buying opportunity.",
-    color: "#16a34a", // dark green
+    min: 0,  max: 30,  zone: "extreme_fear",
+    signal: "STRONG BUY", color: "#16a34a", emoji: "🟢",
+    action: "Deploy capital aggressively in tranches. Extreme Fear marks rare, historically reliable buying opportunities.",
   },
   {
-    min: 31,
-    max: 50,
-    zone: "fear",
-    label: "Fear",
-    signal: "BUY",
-    action:
-      "Accumulate. Fear zone — good entry for SIP and lump sum.",
-    color: "#65a30d", // lime
+    min: 31, max: 50,  zone: "fear",
+    signal: "BUY",        color: "#22c55e", emoji: "🟩",
+    action: "Accumulate quality stocks and index funds. Fear zone offers good entries for SIP top-ups and lump-sum deployment.",
   },
   {
-    min: 51,
-    max: 69,
-    zone: "greed",
-    label: "Greed",
-    signal: "HOLD",
-    action:
-      "Stay invested. No fresh positions. Greed is building.",
-    color: "#ca8a04", // amber
+    min: 51, max: 69,  zone: "greed",
+    signal: "HOLD",       color: "#f59e0b", emoji: "🟡",
+    action: "Stay invested in existing holdings. Avoid chasing new positions. Greed is building — maintain discipline.",
   },
   {
-    min: 70,
-    max: 80,
-    zone: "extreme_greed",
-    label: "Extreme Greed",
-    signal: "REDUCE",
-    action:
-      "Book partial profits. Market is overheated.",
-    color: "#ea580c", // orange
+    min: 70, max: 80,  zone: "extreme_greed",
+    signal: "REDUCE",     color: "#f97316", emoji: "🟠",
+    action: "Book partial profits, especially in high-beta and overvalued stocks. Reduce allocation to aggressive positions.",
   },
   {
-    min: 81,
-    max: 100,
-    zone: "high_extreme_greed",
-    label: "High Extreme Greed",
-    signal: "AVOID",
-    action:
-      "Avoid new positions. Sit on cash. Correction likely.",
-    color: "#dc2626", // red
+    min: 81, max: 100, zone: "high_extreme_greed",
+    signal: "AVOID",      color: "#dc2626", emoji: "🔴",
+    action: "Avoid all new positions. Sit on cash. Market is significantly overbought — a correction is likely.",
   },
 ];
 
+// ---------------------------------------------------------------------------
+// Momentum thresholds
+// ---------------------------------------------------------------------------
+
+const MOMENTUM = {
+  RISING_FAST:  { key: "rising_fast",  minDelta:  3 },
+  RISING:       { key: "rising",       minDelta:  1 },
+  NEUTRAL:      { key: "neutral",      minDelta: -1 },  // -1 < delta <= 1
+  FALLING:      { key: "falling",      minDelta: -3 },
+  FALLING_FAST: { key: "falling_fast", minDelta: -Infinity },
+};
+
+// ---------------------------------------------------------------------------
+// Analysis templates  (12 strings — zone × momentum combinations)
+// ---------------------------------------------------------------------------
+
 /**
- * Derive zone metadata for an MMI value.
+ * Returns a contextual analysis string for the given computed signal.
+ * Variables used: {mmi}, {delta}, {deltaWeek}, {vix}, {zone}
  *
- * @param {number} mmi  - e.g. 34.5
- * @returns {{ zone: string, label: string, signal: string, action: string, color: string }}
+ * @param {object} s  - partial signal object (mmi, zone, momentum, mmiDelta, mmiDeltaWeek, subIndicators)
+ * @returns {string}
  */
-export function classify(mmi) {
-  const band = ZONES.find((z) => mmi >= z.min && mmi <= z.max);
-  if (!band) {
-    // Clamp to nearest band for out-of-range values
-    return mmi < 0 ? ZONES[0] : ZONES[ZONES.length - 1];
+function buildAnalysis(s) {
+  const mmi       = s.mmi.toFixed(1);
+  const delta     = s.mmiDelta  >= 0 ? `+${s.mmiDelta.toFixed(1)}` : s.mmiDelta.toFixed(1);
+  const deltaWeek = s.mmiDeltaWeek >= 0 ? `+${s.mmiDeltaWeek.toFixed(1)}` : s.mmiDeltaWeek.toFixed(1);
+  const vix       = s.subIndicators?.vix != null ? s.subIndicators.vix.toFixed(1) : "N/A";
+  const { zone, momentum } = s;
+
+  // ── HIGH EXTREME GREED ────────────────────────────────────────────────────
+  if (zone === "high_extreme_greed") {
+    if (momentum === "rising_fast") {
+      return (
+        `MMI has surged to ${mmi}, entering rare High Extreme Greed territory with strong upward ` +
+        `momentum (${delta} pts today). Markets are significantly overbought. VIX at ${vix} suggests ` +
+        `complacency. History shows corrections follow such readings. Avoid all new positions and ` +
+        `consider booking profits in weaker holdings.`
+      );
+    }
+    if (momentum === "rising") {
+      return (
+        `MMI climbed to ${mmi}, firmly in High Extreme Greed with positive momentum (${delta} pts). ` +
+        `Euphoria is spreading across market participants. This is typically the late stage of a bull ` +
+        `run. Reduce exposure to high-beta stocks, tighten stop-losses, and build cash reserves ` +
+        `for the inevitable correction.`
+      );
+    }
+    // neutral / falling / falling_fast
+    return (
+      `MMI stands at ${mmi} in High Extreme Greed, though momentum is cooling (${delta} pts today). ` +
+      `A potential topping pattern may be forming. Avoid adding new positions. Trail existing ` +
+      `stop-losses upward and watch for follow-through selling over the next few sessions.`
+    );
   }
-  const { zone, label, signal, action, color } = band;
-  return { zone, label, signal, action, color };
+
+  // ── EXTREME GREED ─────────────────────────────────────────────────────────
+  if (zone === "extreme_greed") {
+    if (momentum === "rising_fast") {
+      return (
+        `MMI has jumped sharply to ${mmi} (${delta} pts today), pushing deeper into Extreme Greed. ` +
+        `VIX at ${vix}. Markets are running hot across most sectors. Consider partial profit-booking ` +
+        `in overvalued names and avoid aggressive new entries. Risk-reward is skewed to the downside.`
+      );
+    }
+    if (momentum === "rising" || momentum === "neutral") {
+      return (
+        `MMI is at ${mmi} in Extreme Greed territory (${delta} pts today, ${deltaWeek} pts this week). ` +
+        `The rally may extend short-term, but risk-reward no longer favours fresh positions. ` +
+        `Trail stop-losses on existing holdings, reduce allocation in speculative bets, ` +
+        `and have a profit-booking plan ready.`
+      );
+    }
+    // falling / falling_fast
+    return (
+      `MMI has eased to ${mmi} within Extreme Greed (${delta} pts today). Momentum is slowing — ` +
+      `an early sign that the rally may be losing steam. Book partial profits, especially in ` +
+      `recent outperformers. A move toward the Greed zone would confirm the reversal trend.`
+    );
+  }
+
+  // ── GREED ─────────────────────────────────────────────────────────────────
+  if (zone === "greed") {
+    if (momentum === "rising_fast" || momentum === "rising") {
+      return (
+        `MMI has risen to ${mmi}, moving deeper into Greed territory (${delta} pts today). ` +
+        `Broad market optimism is increasing. Stay invested in quality holdings but resist the ` +
+        `temptation to chase momentum. New positions at this level carry above-average risk. ` +
+        `Monitor breadth and sector rotation for early warning signals.`
+      );
+    }
+    if (momentum === "neutral") {
+      return (
+        `MMI holds at ${mmi} in the Greed zone with neutral momentum (${delta} pts). ` +
+        `No action required. Existing holdings can be retained with defined stop-losses in place. ` +
+        `Avoid aggressive new buys. Watch for a directional break — toward Extreme Greed ` +
+        `(profit-take) or toward Fear (accumulate).`
+      );
+    }
+    // falling / falling_fast
+    return (
+      `MMI has dipped to ${mmi} within the Greed zone (${delta} pts today, ${deltaWeek} pts this week). ` +
+      `Early signs of cooling sentiment. No immediate action needed, but prepare a watchlist ` +
+      `for accumulation — a further dip into Fear territory would present a better entry opportunity.`
+    );
+  }
+
+  // ── FEAR ──────────────────────────────────────────────────────────────────
+  if (zone === "fear") {
+    if (momentum === "falling_fast" || momentum === "falling") {
+      return (
+        `MMI has fallen to ${mmi} in Fear territory (${delta} pts today). ` +
+        `Markets are oversold in the short term as pessimism builds. ` +
+        `Begin accumulating blue-chip stocks and index funds on dips. ` +
+        `Stagger entries in 2–3 tranches — momentum suggests further weakness may follow ` +
+        `before a meaningful recovery.`
+      );
+    }
+    // neutral / rising / rising_fast
+    return (
+      `MMI is at ${mmi} in the Fear zone and showing recovery momentum (${delta} pts today). ` +
+      `This positive shift is encouraging. Consider increasing SIP top-up amounts and ` +
+      `adding selectively to quality midcap and bluechip positions. The risk-reward is ` +
+      `favourable for medium-term investors at this level.`
+    );
+  }
+
+  // ── EXTREME FEAR ──────────────────────────────────────────────────────────
+  // (catches all momentum states — this zone is rare and always high-alert)
+  return (
+    `MMI has dropped to a rare ${mmi} — Extreme Fear! This level occurs less than 5% of the ` +
+    `time historically and has consistently marked major market bottoms. VIX at ${vix} signals ` +
+    `peak pessimism. Deploy capital aggressively in tranches across index funds and quality ` +
+    `large-caps. History rewards investors who buy decisively during Extreme Fear. ` +
+    `This is a generational buying opportunity.`
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Classify an MMI value into its zone band.
+ * @param {number} mmi
+ * @returns {object}  matching entry from ZONES
+ */
+function classifyZone(mmi) {
+  return (
+    ZONES.find((z) => mmi >= z.min && mmi <= z.max) ??
+    (mmi < 0 ? ZONES[0] : ZONES[ZONES.length - 1])
+  );
 }
 
 /**
- * Build a complete data record for today's MMI reading.
- *
- * @param {object} params
- * @param {string} params.date           - "YYYY-MM-DD"
- * @param {number} params.mmi
- * @param {string} params.interpretation - label from TickerTape
- * @param {number} params.nifty50
- * @param {number} params.niftyNext50
- * @returns {object}
+ * Derive momentum label from today-vs-lastday MMI delta.
+ * @param {number} delta
+ * @returns {string}
  */
-export function buildRecord({ date, mmi, interpretation, nifty50, niftyNext50 }) {
-  const { zone, label, signal, action, color } = classify(mmi);
+function classifyMomentum(delta) {
+  if (delta >  3) return "rising_fast";
+  if (delta >  1) return "rising";
+  if (delta >= -1) return "neutral";
+  if (delta >= -3) return "falling";
+  return "falling_fast";
+}
+
+// ---------------------------------------------------------------------------
+// Main export
+// ---------------------------------------------------------------------------
+
+/**
+ * Compute a fully-annotated trading signal from today's MMI and index data.
+ *
+ * @param {object}      mmiData     - return value of fetchMMI()
+ * @param {object}      indicesData - return value of fetchIndices()
+ * @param {number|null} previousMMI - last persisted mmi value (for delta), or null
+ *
+ * @returns {{
+ *   date:             string,
+ *   mmi:              number,
+ *   zone:             string,
+ *   signal:           string,
+ *   color:            string,
+ *   emoji:            string,
+ *   momentum:         string,
+ *   mmiDelta:         number,
+ *   mmiDeltaWeek:     number,
+ *   action:           string,
+ *   analysis:         string,
+ *   isHighAlert:      boolean,
+ *   nifty50Close:     number|null,
+ *   niftyNext50Close: number|null,
+ *   subIndicators:    { vix, fii, skew, momentum, trin, extrema },
+ * }}
+ */
+export function computeSignal(mmiData, indicesData, previousMMI) {
+  const mmi = mmiData.mmi;
+
+  // Delta: today vs yesterday (from live API) or from KV previous record
+  const lastdayMMI  = mmiData.lastday?.mmi ?? previousMMI ?? mmi;
+  const lastwkMMI   = mmiData.lastweek?.mmi ?? mmi;
+
+  const mmiDelta     = parseFloat((mmi - lastdayMMI).toFixed(2));
+  const mmiDeltaWeek = parseFloat((mmi - lastwkMMI).toFixed(2));
+
+  const { zone, signal, color, emoji, action } = classifyZone(mmi);
+  const momentum = classifyMomentum(mmiDelta);
+
+  const subIndicators = {
+    vix:      mmiData.vix,
+    fii:      mmiData.fii,
+    skew:     mmiData.skew,
+    momentum: mmiData.momentum,
+    trin:     mmiData.trin,
+    extrema:  mmiData.extrema,
+  };
+
+  const partial = { mmi, zone, momentum, mmiDelta, mmiDeltaWeek, subIndicators };
+  const analysis = buildAnalysis(partial);
+
+  const HIGH_ALERT_ZONES = new Set(["extreme_fear", "high_extreme_greed"]);
+
   return {
-    date,
+    date:             mmiData.date,
     mmi,
-    interpretation: interpretation ?? label,
-    nifty50,
-    niftyNext50,
     zone,
     signal,
-    action,
     color,
-    fetchedAt: new Date().toISOString(),
+    emoji,
+    momentum,
+    mmiDelta,
+    mmiDeltaWeek,
+    action,
+    analysis,
+    isHighAlert:      HIGH_ALERT_ZONES.has(zone),
+    nifty50Close:     indicesData?.nifty50?.close     ?? null,
+    niftyNext50Close: indicesData?.niftyNext50?.close ?? null,
+    subIndicators,
   };
 }
 
-/**
- * Decide whether to send an alert for the new record.
- * Alerts fire when:
- *  1. The signal changes from the previous day.
- *  2. The zone changes (zone crossing is always noteworthy).
- *  3. MMI enters or exits extreme_fear / high_extreme_greed.
- *
- * @param {object|null} previousRecord  - last persisted record (may be null)
- * @param {object}      newRecord
- * @returns {{ shouldAlert: boolean, reason: string|null }}
- */
-export function shouldSendAlert(previousRecord, newRecord) {
-  if (!previousRecord) {
-    return { shouldAlert: true, reason: "First record — baseline established." };
-  }
-
-  if (previousRecord.signal !== newRecord.signal) {
-    return {
-      shouldAlert: true,
-      reason: `Signal changed: ${previousRecord.signal} → ${newRecord.signal}`,
-    };
-  }
-
-  if (previousRecord.zone !== newRecord.zone) {
-    return {
-      shouldAlert: true,
-      reason: `Zone crossed: ${previousRecord.zone} → ${newRecord.zone}`,
-    };
-  }
-
-  const extremeZones = new Set(["extreme_fear", "high_extreme_greed"]);
-  if (extremeZones.has(newRecord.zone)) {
-    return {
-      shouldAlert: true,
-      reason: `Staying in extreme zone (${newRecord.zone}) — daily reminder.`,
-    };
-  }
-
-  return { shouldAlert: false, reason: null };
-}
-
-/**
- * Exported zone definitions (useful for frontend gauge rendering).
- */
+// Re-export ZONES for frontend gauge rendering
 export { ZONES };
