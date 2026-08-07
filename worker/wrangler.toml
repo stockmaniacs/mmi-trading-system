@@ -9,8 +9,8 @@ crons = ["30 10 * * 1-5"]
 
 [[kv_namespaces]]
 binding = "MMI_KV"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
-preview_id = "REPLACE_WITH_KV_PREVIEW_ID"
+id = "16eb5d4a3b424f4eae486f50cd84aa76"
+preview_id = "a2bc7c3a579f40388f3d05034beb0a5a"
 
 [vars]
 GITHUB_REPO = "stockmaniacs/mmi-trading-system"
