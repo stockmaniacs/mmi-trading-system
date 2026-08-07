@@ -107,7 +107,13 @@ async function init() {
 
   // ── 1. Fetch live signal ─────────────────────────────────────────────────
   try {
-    signal = await fetchJSON(`${API_BASE}/api/signal`);
+    const raw = await fetchJSON(`${API_BASE}/api/signal`);
+    // Treat {} (empty KV — no cron run yet) the same as a failed fetch
+    if (raw && typeof raw.mmi === 'number') {
+      signal = raw;
+    } else {
+      apiError = 'No signal yet — showing latest from history.';
+    }
   } catch (err) {
     apiError = 'Live signal unavailable — showing latest from history.';
   }
