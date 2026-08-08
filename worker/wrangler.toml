@@ -15,7 +15,7 @@ preview_id = "a2bc7c3a579f40388f3d05034beb0a5a"
 [vars]
 GITHUB_REPO        = "stockmaniacs/mmi-trading-system"
 GITHUB_DATA_BRANCH = "main"
-RELAY_URL = "https://stockmaniacs.net/php-files/mmi-relay.php"
+RELAY_URL = "https://www.stockmaniacs.net/php-files/mmi-relay.php"
 # PHP relay on Hostinger — sends email via SMTP from inside Hostinger's network
 # (Cloudflare Worker IPs are blocked by Hostinger SMTP externally)
 
