@@ -15,11 +15,11 @@ preview_id = "a2bc7c3a579f40388f3d05034beb0a5a"
 [vars]
 GITHUB_REPO        = "stockmaniacs/mmi-trading-system"
 GITHUB_DATA_BRANCH = "main"
-SMTP_HOST          = "smtp.hostinger.com"
-SMTP_USER          = "alerts@stockmaniacs.net"
-# Port 587 + STARTTLS is used by default (hardcoded in emailAlert.js)
+RELAY_URL = "https://ipoindiahub.com/mmi-relay.php"
+# PHP relay on Hostinger — sends email via SMTP from inside Hostinger's network
+# (Cloudflare Worker IPs are blocked by Hostinger SMTP externally)
 
 # Secrets — set via `wrangler secret put`:
 #   GITHUB_TOKEN    (set)
 #   TRIGGER_TOKEN   (set)
-#   SMTP_PASSWORD   (set)
+#   RELAY_TOKEN     (set)

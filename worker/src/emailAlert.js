@@ -1,13 +1,17 @@
 /**
  * emailAlert.js
- * Sends MMI signal alerts via Hostinger SMTP using cloudflare:sockets.
+ * Sends MMI signal alerts via a PHP relay hosted on Hostinger.
+ *
+ * Architecture:
+ *   Worker --HTTPS POST--> ipoindiahub.com/mmi-relay.php
+ *                          --STARTTLS:587--> smtp.hostinger.com
+ *
+ * Cloudflare Workers edge IPs are blocked by Hostinger SMTP directly.
+ * The PHP relay runs on Hostinger's own network where SMTP is always allowed.
  *
  * Required env bindings:
- *   SMTP_HOST     (var)    — "smtp.hostinger.com"
- *   SMTP_USER     (var)    — sender address, e.g. "alerts@stockmaniacs.net"
- *   SMTP_PASSWORD (secret) — Hostinger email account password
- *
- * Protocol: port 587 with STARTTLS (more widely supported than port 465 SMTPS).
+ *   RELAY_URL   (var)    — "https://ipoindiahub.com/mmi-relay.php"
+ *   RELAY_TOKEN (secret) — shared token checked by the PHP relay
  *
  * Template A — Standard daily alert  (signal.isHighAlert === false)
  *   Subject: "📊 MMI Daily: {mmi} — {signal} | {date}"
@@ -16,8 +20,6 @@
  *   Subject: "🚨 HIGH ALERT — MMI {mmi}: {signal} | StockManiacs"
  *   Adds a coloured warning banner + Historical Context section.
  */
-
-import { connect } from 'cloudflare:sockets';
 
 // ---------------------------------------------------------------------------
 // Recipients
@@ -44,221 +46,46 @@ export async function sendEmailAlert(signal, env) {
   const subject  = buildSubject(signal);
   const htmlBody = generateEmailHTML(signal);
 
+  const relayUrl   = env.RELAY_URL;
+  const relayToken = env.RELAY_TOKEN;
+
+  if (!relayUrl || !relayToken) {
+    console.error("[emailAlert] RELAY_URL or RELAY_TOKEN not configured — skipping");
+    return;
+  }
+
   try {
-    await smtpSend({
-      host:        env.SMTP_HOST || "smtp.hostinger.com",
-      user:        env.SMTP_USER,
-      pass:        env.SMTP_PASSWORD,
-      toAddresses: RECIPIENTS.map((r) => r.email),
-      subject,
-      html:        htmlBody,
+    const res = await fetch(relayUrl, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({
+        token:   relayToken,
+        to:      RECIPIENTS.map((r) => r.email),
+        subject,
+        html:    htmlBody,
+      }),
+      signal: AbortSignal.timeout(20_000),
     });
-    console.log(`[emailAlert] Sent: ${subject}`);
+
+    const body = await res.text();
+    if (!res.ok) {
+      throw new Error(`Relay HTTP ${res.status}: ${body}`);
+    }
+
+    const result = JSON.parse(body);
+    if (!result.success) {
+      throw new Error(`Relay returned failure: ${body}`);
+    }
+
+    console.log(`[emailAlert] Sent via relay: ${subject}`);
   } catch (err) {
-    console.error(`[emailAlert] SMTP send failed — ${err.message}`);
+    console.error(`[emailAlert] Relay send failed — ${err.message}`);
     // Do NOT throw — email failure must not abort the cron job
   }
 }
 
-// ---------------------------------------------------------------------------
-// SMTP client using cloudflare:sockets (port 587 + STARTTLS)
-// ---------------------------------------------------------------------------
-
-/**
- * Connect to the SMTP server on port 587 (plaintext), perform STARTTLS to
- * upgrade to TLS, then authenticate and send one email.
- *
- * Uses AUTH LOGIN (base64 username + password, standard for Hostinger).
- * Uses Content-Transfer-Encoding: base64 so the HTML body is 7-bit safe.
- *
- * We deliberately use port 587 + STARTTLS rather than port 465 direct SSL
- * because it is more reliably reachable from Cloudflare Workers edge IPs.
- */
-async function smtpSend({ host, user, pass, toAddresses, subject, html }) {
-  const enc = new TextEncoder();
-
-  // ── 1. Plain connection on port 587 ────────────────────────────────────
-  const plainSocket = connect(`${host}:587`, { secureTransport: "starttls" });
-  let smtp   = new SMTPReader(plainSocket.readable);
-  let writer = plainSocket.writable.getWriter();
-
-  /** Write one CRLF-terminated command to the current writer. */
-  const write = async (cmd) => writer.write(enc.encode(cmd + "\r\n"));
-
-  /** Read one SMTP response and assert the expected code; throw on mismatch. */
-  const expect = async (code) => {
-    const resp = await smtp.readResponse();
-    if (resp.code !== code) {
-      throw new Error(`Expected ${code}, got ${resp.code}: ${resp.lines.join(" | ")}`);
-    }
-    return resp;
-  };
-
-  try {
-    // ── 2. Server greeting ─────────────────────────────────────────────
-    await expect("220");
-
-    // ── 3. EHLO — discover capabilities ───────────────────────────────
-    await write("EHLO mmi-worker");
-    const ehlo1 = await expect("250");
-
-    // ── 4. STARTTLS ────────────────────────────────────────────────────
-    if (!ehlo1.lines.some((l) => /STARTTLS/i.test(l))) {
-      throw new Error("SMTP server did not advertise STARTTLS capability");
-    }
-    await write("STARTTLS");
-    await expect("220"); // "Go ahead"
-
-    // ── 5. Upgrade to TLS — release plain-socket locks first ──────────
-    smtp.releaseReader();
-    writer.releaseLock();
-
-    const secureSocket = plainSocket.startTls();
-    smtp   = new SMTPReader(secureSocket.readable);
-    writer = secureSocket.writable.getWriter();
-
-    // ── 6. Re-EHLO over TLS ────────────────────────────────────────────
-    await write("EHLO mmi-worker");
-    await expect("250");
-
-    // ── 7. AUTH LOGIN ──────────────────────────────────────────────────
-    await write("AUTH LOGIN");
-    await expect("334"); // "Username:"
-    await write(btoa(user));
-    await expect("334"); // "Password:"
-    await write(btoa(pass));
-    await expect("235"); // "Authentication successful"
-
-    // ── 8. Envelope sender (must match authenticated user on Hostinger) ─
-    await write(`MAIL FROM:<${user}>`);
-    await expect("250");
-
-    // ── 9. Envelope recipients ─────────────────────────────────────────
-    for (const addr of toAddresses) {
-      await write(`RCPT TO:<${addr}>`);
-      await expect("250");
-    }
-
-    // ── 10. DATA command ───────────────────────────────────────────────
-    await write("DATA");
-    await expect("354");
-
-    // ── 11. RFC 2822 message — base64 body avoids dot-stuffing issues ──
-    const toHeader = toAddresses.join(", ");
-    const b64Html  = utf8ToBase64(html);
-    const b64Lines = chunkBase64(b64Html, 76); // RFC 2045: max 76 chars/line
-
-    const messageParts = [
-      `Date: ${new Date().toUTCString()}`,
-      `From: StockManiacs Alerts <${user}>`,
-      `To: ${toHeader}`,
-      `Subject: ${mimeEncodeHeader(subject)}`,
-      `MIME-Version: 1.0`,
-      `Content-Type: text/html; charset=UTF-8`,
-      `Content-Transfer-Encoding: base64`,
-      ``,          // blank line separates headers from body
-      ...b64Lines,
-      ``,          // blank line before DATA terminator
-      `.`,         // SMTP end-of-DATA marker (CRLF appended by write())
-    ];
-
-    await write(messageParts.join("\r\n"));
-    await expect("250"); // message accepted
-
-    // ── 12. QUIT ───────────────────────────────────────────────────────
-    await write("QUIT");
-    // Don't await 221 — server may close the connection immediately
-
-  } finally {
-    // Best-effort cleanup — release any remaining stream locks
-    try { smtp.releaseReader(); } catch (_) { /* ignore */ }
-    try { writer.releaseLock();  } catch (_) { /* ignore */ }
-    try { plainSocket.close();   } catch (_) { /* ignore */ }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// SMTPReader — buffered line-by-line reader for the SMTP response stream
-// ---------------------------------------------------------------------------
-
-class SMTPReader {
-  constructor(readable) {
-    this.reader  = readable.getReader();
-    this.buffer  = "";
-    this.decoder = new TextDecoder();
-  }
-
-  /** Release the reader lock so the socket can be upgraded (STARTTLS). */
-  releaseReader() {
-    try { this.reader.releaseLock(); } catch (_) { /* ignore */ }
-  }
-
-  /** Read one CRLF-terminated line from the stream. */
-  async readLine() {
-    while (!this.buffer.includes("\r\n")) {
-      const { value, done } = await this.reader.read();
-      if (done) throw new Error("SMTP: connection closed unexpectedly");
-      this.buffer += this.decoder.decode(value, { stream: true });
-    }
-    const idx  = this.buffer.indexOf("\r\n");
-    const line = this.buffer.slice(0, idx);
-    this.buffer = this.buffer.slice(idx + 2);
-    return line;
-  }
-
-  /**
-   * Read a complete (possibly multi-line) SMTP response.
-   * Multi-line responses use "NNN-" continuation; the final line uses "NNN ".
-   * Returns { code: "250", lines: ["250-SIZE 73400320", ..., "250 OK"] }
-   */
-  async readResponse() {
-    const lines = [];
-    while (true) {
-      const line = await this.readLine();
-      lines.push(line);
-      // 4th character is ' ' on the last line, '-' on continuation lines
-      if (line.length < 4 || line[3] === " ") break;
-    }
-    const last = lines[lines.length - 1];
-    return { code: last.slice(0, 3), lines };
-  }
-}
-
-// ---------------------------------------------------------------------------
-// MIME helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Encode a potentially non-ASCII subject line per RFC 2047 (Q-encoding in base64).
- * Handles emoji and multi-byte characters safely.
- */
-function mimeEncodeHeader(str) {
-  return `=?UTF-8?B?${utf8ToBase64(str)}?=`;
-}
-
-/**
- * Convert a JS string to base64-encoded UTF-8.
- * Works with full Unicode (emoji, ₹, —, …) in Cloudflare Workers.
- */
-function utf8ToBase64(str) {
-  const bytes  = new TextEncoder().encode(str);
-  let   binary = "";
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
-
-/**
- * Split a base64 string into fixed-width lines (RFC 2045 §6.8: max 76 chars).
- */
-function chunkBase64(b64, width) {
-  const lines = [];
-  for (let i = 0; i < b64.length; i += width) {
-    lines.push(b64.slice(i, i + width));
-  }
-  return lines;
-}
+// (SMTP client removed — email is sent via PHP relay on Hostinger;
+//  see hostinger/mmi-relay.php in the repo for the server-side code)
 
 // ---------------------------------------------------------------------------
 // Exported: HTML generator (pure function, no side effects)
