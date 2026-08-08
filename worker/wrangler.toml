@@ -13,13 +13,13 @@ id = "16eb5d4a3b424f4eae486f50cd84aa76"
 preview_id = "a2bc7c3a579f40388f3d05034beb0a5a"
 
 [vars]
-GITHUB_REPO = "stockmaniacs/mmi-trading-system"
+GITHUB_REPO        = "stockmaniacs/mmi-trading-system"
 GITHUB_DATA_BRANCH = "main"
-BREVO_SENDER_EMAIL = "alerts@stockmaniacs.net"
-BREVO_SENDER_NAME = "StockManiacs Alerts"
-ALERT_RECIPIENTS = "stockmaniacsdotnet@gmail.com,helpdesk@stockmaniacs.net,stockmaniacs@ymail.com"
+SMTP_HOST          = "smtp.hostinger.com"
+SMTP_PORT          = "465"
+SMTP_USER          = "alerts@stockmaniacs.net"
 
-# Secrets — add via `wrangler secret put`:
-#   GITHUB_TOKEN
-#   BREVO_API_KEY
-#   UPSTOX_ACCESS_TOKEN
+# Secrets — set via `wrangler secret put`:
+#   GITHUB_TOKEN        (set)
+#   TRIGGER_TOKEN       (set)
+#   SMTP_PASSWORD       ← one remaining secret

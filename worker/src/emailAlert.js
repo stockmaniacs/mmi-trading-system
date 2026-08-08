@@ -1,6 +1,12 @@
 /**
  * emailAlert.js
- * Sends daily MMI signal alerts via Brevo transactional email API.
+ * Sends MMI signal alerts via Hostinger SMTP using cloudflare:sockets.
+ *
+ * Required env bindings:
+ *   SMTP_HOST     (var)    — "smtp.hostinger.com"
+ *   SMTP_PORT     (var)    — "465"  (direct SSL — simpler than STARTTLS)
+ *   SMTP_USER     (var)    — sender address, e.g. "alerts@stockmaniacs.net"
+ *   SMTP_PASSWORD (secret) — Hostinger email account password
  *
  * Template A — Standard daily alert  (signal.isHighAlert === false)
  *   Subject: "📊 MMI Daily: {mmi} — {signal} | {date}"
@@ -9,6 +15,8 @@
  *   Subject: "🚨 HIGH ALERT — MMI {mmi}: {signal} | StockManiacs"
  *   Adds a coloured warning banner + Historical Context section.
  */
+
+import { connect } from 'cloudflare:sockets';
 
 // ---------------------------------------------------------------------------
 // Recipients
@@ -25,37 +33,207 @@ const RECIPIENTS = [
 // ---------------------------------------------------------------------------
 
 /**
- * Send the MMI signal alert email via Brevo.
+ * Send the MMI signal alert email via Hostinger SMTP.
  * Email failures are logged but DO NOT throw — must not abort the cron job.
  *
  * @param {object} signal - return value of computeSignal()
- * @param {object} env    - Cloudflare Worker env bindings (needs BREVO_API_KEY)
+ * @param {object} env    - Cloudflare Worker env bindings
  */
 export async function sendEmailAlert(signal, env) {
   const subject  = buildSubject(signal);
   const htmlBody = generateEmailHTML(signal);
 
-  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-    method: "POST",
-    headers: {
-      "api-key":      env.BREVO_API_KEY,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      sender:      { email: "alerts@stockmaniacs.net", name: "StockManiacs Alerts" },
-      to:          RECIPIENTS,
+  try {
+    await smtpSend({
+      host:        env.SMTP_HOST || "smtp.hostinger.com",
+      port:        parseInt(env.SMTP_PORT || "465", 10),
+      user:        env.SMTP_USER,
+      pass:        env.SMTP_PASSWORD,
+      toAddresses: RECIPIENTS.map((r) => r.email),
       subject,
-      htmlContent: htmlBody,
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    console.error(`Brevo send failed (${res.status}):`, errText);
+      html:        htmlBody,
+    });
+    console.log(`[emailAlert] Sent: ${subject}`);
+  } catch (err) {
+    console.error(`[emailAlert] SMTP send failed — ${err.message}`);
     // Do NOT throw — email failure must not abort the cron job
-  } else {
-    console.log(`Email sent: ${subject}`);
   }
+}
+
+// ---------------------------------------------------------------------------
+// SMTP client using cloudflare:sockets (direct SSL on port 465)
+// ---------------------------------------------------------------------------
+
+/**
+ * Open an SSL TCP connection to the SMTP server and send one email.
+ * Uses AUTH LOGIN (base64 username + password, standard for Hostinger).
+ * Uses Content-Transfer-Encoding: base64 so HTML body is 7-bit safe.
+ */
+async function smtpSend({ host, port, user, pass, toAddresses, subject, html }) {
+  const socket = connect(`${host}:${port}`, { secureTransport: "on" });
+  const smtp   = new SMTPReader(socket.readable);
+  const writer = socket.writable.getWriter();
+  const enc    = new TextEncoder();
+
+  /** Write a CRLF-terminated line to the SMTP stream. */
+  async function write(line) {
+    await writer.write(enc.encode(line + "\r\n"));
+  }
+
+  /**
+   * Read a complete SMTP response and assert the expected 3-digit code.
+   * Throws an Error if the actual code differs — caller's try/catch handles it.
+   */
+  async function expect(code) {
+    const resp = await smtp.readResponse();
+    if (resp.code !== code) {
+      throw new Error(
+        `Expected ${code}, got ${resp.code}: ${resp.lines.join(" | ")}`
+      );
+    }
+    return resp;
+  }
+
+  try {
+    // 1. Server greeting
+    await expect("220");
+
+    // 2. EHLO — identify ourselves
+    await write("EHLO mmi-worker");
+    await expect("250");
+
+    // 3. AUTH LOGIN — sends credentials as base64
+    await write("AUTH LOGIN");
+    await expect("334"); // "Username:"
+    await write(btoa(user));
+    await expect("334"); // "Password:"
+    await write(btoa(pass));
+    await expect("235"); // "Authentication successful"
+
+    // 4. Envelope sender (must match authenticated user on Hostinger)
+    await write(`MAIL FROM:<${user}>`);
+    await expect("250");
+
+    // 5. Envelope recipients
+    for (const addr of toAddresses) {
+      await write(`RCPT TO:<${addr}>`);
+      await expect("250");
+    }
+
+    // 6. DATA command
+    await write("DATA");
+    await expect("354");
+
+    // 7. Build RFC 2822 message — base64 body avoids dot-stuffing and charset issues
+    const toHeader = toAddresses.join(", ");
+    const b64Html  = utf8ToBase64(html);
+    const b64Lines = chunkBase64(b64Html, 76); // RFC 2045: max 76 chars/line
+
+    const messageParts = [
+      `Date: ${new Date().toUTCString()}`,
+      `From: StockManiacs Alerts <${user}>`,
+      `To: ${toHeader}`,
+      `Subject: ${mimeEncodeHeader(subject)}`,
+      `MIME-Version: 1.0`,
+      `Content-Type: text/html; charset=UTF-8`,
+      `Content-Transfer-Encoding: base64`,
+      ``,                  // blank line separates headers from body
+      ...b64Lines,
+      ``,                  // blank line before DATA terminator
+      `.`,                 // SMTP DATA terminator (trailing \r\n added by write())
+    ];
+
+    // Write the whole message as one write() call so the terminator
+    // arrives in the correct position relative to the body.
+    await write(messageParts.join("\r\n"));
+    await expect("250");
+
+    // 8. QUIT
+    await write("QUIT");
+    // Don't await a 221 — we're done and the server may close first
+
+  } finally {
+    try { await writer.close(); } catch (_) { /* ignore */ }
+    socket.close();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SMTPReader — buffered line-by-line reader for the SMTP response stream
+// ---------------------------------------------------------------------------
+
+class SMTPReader {
+  constructor(readable) {
+    this.reader  = readable.getReader();
+    this.buffer  = "";
+    this.decoder = new TextDecoder();
+  }
+
+  /** Read one CRLF-terminated line from the stream. */
+  async readLine() {
+    while (!this.buffer.includes("\r\n")) {
+      const { value, done } = await this.reader.read();
+      if (done) throw new Error("SMTP: connection closed unexpectedly");
+      this.buffer += this.decoder.decode(value, { stream: true });
+    }
+    const idx  = this.buffer.indexOf("\r\n");
+    const line = this.buffer.slice(0, idx);
+    this.buffer = this.buffer.slice(idx + 2);
+    return line;
+  }
+
+  /**
+   * Read a complete (possibly multi-line) SMTP response.
+   * Multi-line responses have "NNN-" continuation; the last line has "NNN ".
+   * Returns { code: "250", lines: ["250-SIZE 73400320", ..., "250 OK"] }
+   */
+  async readResponse() {
+    const lines = [];
+    while (true) {
+      const line = await this.readLine();
+      lines.push(line);
+      // The 4th character is ' ' on the last line, '-' on continuation lines
+      if (line.length < 4 || line[3] === " ") break;
+    }
+    const last = lines[lines.length - 1];
+    return { code: last.slice(0, 3), lines };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// MIME helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Encode a potentially non-ASCII subject line per RFC 2047 (Q-encoding in base64).
+ * Handles emoji and multi-byte characters safely.
+ */
+function mimeEncodeHeader(str) {
+  return `=?UTF-8?B?${utf8ToBase64(str)}?=`;
+}
+
+/**
+ * Convert a JS string to base64-encoded UTF-8.
+ * Works with full Unicode (emoji, ₹, —, …) in Cloudflare Workers.
+ */
+function utf8ToBase64(str) {
+  const bytes  = new TextEncoder().encode(str);
+  let   binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+/**
+ * Split a base64 string into fixed-width lines (RFC 2045 §6.8: max 76 chars).
+ */
+function chunkBase64(b64, width) {
+  const lines = [];
+  for (let i = 0; i < b64.length; i += width) {
+    lines.push(b64.slice(i, i + width));
+  }
+  return lines;
 }
 
 // ---------------------------------------------------------------------------
@@ -71,7 +249,6 @@ export async function sendEmailAlert(signal, env) {
  * @returns {string}
  */
 export function generateEmailHTML(signal) {
-  // Template B: header bg = signal colour; Template A: dark navy
   const headerBg = signal.isHighAlert ? signal.color : "#1e3a5f";
 
   const rows = [];
@@ -119,16 +296,15 @@ export function generateEmailHTML(signal) {
 function buildSubject(signal) {
   const mmi = fmtMMI(signal.mmi);
   if (signal.isHighAlert) {
-    return `🚨 HIGH ALERT — MMI ${mmi}: ${signal.signal} | StockManiacs`;
+    return `\u{1F6A8} HIGH ALERT — MMI ${mmi}: ${signal.signal} | StockManiacs`;
   }
-  return `📊 MMI Daily: ${mmi} — ${signal.signal} | ${signal.date}`;
+  return `\u{1F4CA} MMI Daily: ${mmi} — ${signal.signal} | ${signal.date}`;
 }
 
 // ---------------------------------------------------------------------------
 // Section renderers — each returns a <tr>…</tr> string
 // ---------------------------------------------------------------------------
 
-/** 1. Header row: brand left, alert label right */
 function renderHeader(headerBg) {
   return (
     `<tr>\n` +
@@ -147,7 +323,6 @@ function renderHeader(headerBg) {
   );
 }
 
-/** 2. HIGH ALERT warning banner (Template B only) */
 function renderHighAlertBanner(signal) {
   const bgTint = hexToRgba(signal.color, 0.10);
   const warningText =
@@ -162,14 +337,13 @@ function renderHighAlertBanner(signal) {
   return (
     `<tr>\n` +
     `<td style="padding:16px 24px 0;">\n` +
-    // Left-border box via a 2-cell table (more reliable than border-left in email)
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">\n` +
     `<tr>\n` +
     `<td width="4" style="background-color:${signal.color};` +
       `border-radius:2px 0 0 2px;">&nbsp;</td>\n` +
     `<td style="background-color:${bgTint};padding:14px 18px;">\n` +
     `<p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#1a1a2e;` +
-      `font-family:Arial,Helvetica,sans-serif;">⚠️ HIGH ALERT</p>\n` +
+      `font-family:Arial,Helvetica,sans-serif;">&#x26A0;&#xFE0F; HIGH ALERT</p>\n` +
     `<p style="margin:0;font-size:14px;color:#333333;line-height:1.65;` +
       `font-family:Arial,Helvetica,sans-serif;">${warningText}</p>\n` +
     `</td>\n` +
@@ -180,7 +354,6 @@ function renderHighAlertBanner(signal) {
   );
 }
 
-/** 3. Hero block: large MMI number on signal colour background */
 function renderHero(signal) {
   return (
     `<tr>\n` +
@@ -194,10 +367,9 @@ function renderHero(signal) {
   );
 }
 
-/** 4. Today's Reading: MMI | Zone | Momentum + deltas */
 function renderReadings(signal) {
-  const dayCol   = signal.mmiDelta     >= 0 ? "#16a34a" : "#dc2626";
-  const weekCol  = signal.mmiDeltaWeek >= 0 ? "#16a34a" : "#dc2626";
+  const dayCol   = (signal.mmiDelta     ?? 0) >= 0 ? "#16a34a" : "#dc2626";
+  const weekCol  = (signal.mmiDeltaWeek ?? 0) >= 0 ? "#16a34a" : "#dc2626";
   const dayDelta = fmtDelta(signal.mmiDelta);
   const wkDelta  = fmtDelta(signal.mmiDeltaWeek);
 
@@ -207,7 +379,7 @@ function renderReadings(signal) {
       `border-top:1px solid #e9ecef;border-bottom:1px solid #e9ecef;">\n` +
     `<p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#6c757d;` +
       `text-transform:uppercase;letter-spacing:1px;` +
-      `font-family:Arial,Helvetica,sans-serif;">Today’s Reading</p>\n` +
+      `font-family:Arial,Helvetica,sans-serif;">Today's Reading</p>\n` +
     `<p style="margin:0 0 14px;font-size:15px;color:#212529;` +
       `font-family:Arial,Helvetica,sans-serif;">\n` +
     `<strong>MMI:</strong> ${fmtMMI(signal.mmi)}` +
@@ -233,7 +405,6 @@ function renderReadings(signal) {
   );
 }
 
-/** 5. "What This Means" — action text in coloured left-border box */
 function renderAction(signal) {
   return (
     `<tr>\n` +
@@ -256,7 +427,6 @@ function renderAction(signal) {
   );
 }
 
-/** 6. Market Analysis — signal.analysis paragraph */
 function renderAnalysis(signal) {
   return (
     `<tr>\n` +
@@ -271,7 +441,6 @@ function renderAnalysis(signal) {
   );
 }
 
-/** 7. Index Levels — 2-row table */
 function renderIndexLevels(signal) {
   const n50  = fmtIndex(signal.nifty50Close);
   const nn50 = fmtIndex(signal.niftyNext50Close);
@@ -284,7 +453,6 @@ function renderIndexLevels(signal) {
       `font-family:Arial,Helvetica,sans-serif;">Index Levels</p>\n` +
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" ` +
       `style="border:1px solid #dee2e6;border-radius:4px;overflow:hidden;">\n` +
-    // Row 1
     `<tr style="background-color:#f8f9fa;">\n` +
     `<td style="padding:10px 16px;font-size:13px;color:#495057;` +
       `font-family:Arial,Helvetica,sans-serif;` +
@@ -293,7 +461,6 @@ function renderIndexLevels(signal) {
       `color:#212529;font-family:Arial,Helvetica,sans-serif;` +
       `border-bottom:1px solid #dee2e6;">${n50}</td>\n` +
     `</tr>\n` +
-    // Row 2
     `<tr>\n` +
     `<td style="padding:10px 16px;font-size:13px;color:#495057;` +
       `font-family:Arial,Helvetica,sans-serif;">Nifty Next 50</td>\n` +
@@ -306,7 +473,6 @@ function renderIndexLevels(signal) {
   );
 }
 
-/** 8. Sub-Indicators — 3-column mini-table: FII | VIX | Put/Call Skew */
 function renderSubIndicators(signal) {
   const si   = signal.subIndicators ?? {};
   const fii  = fmtFii(si.fii);
@@ -331,13 +497,11 @@ function renderSubIndicators(signal) {
       `font-family:Arial,Helvetica,sans-serif;">Sub-Indicators</p>\n` +
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" ` +
       `style="border:1px solid #dee2e6;border-radius:4px;overflow:hidden;">\n` +
-    // Header row
     `<tr>\n` +
     `<th style="${thMidStyle}">FII Net (&#8377;Cr)</th>\n` +
     `<th style="${thMidStyle}">VIX</th>\n` +
     `<th style="${thStyle}">Put/Call Skew</th>\n` +
     `</tr>\n` +
-    // Data row
     `<tr>\n` +
     `<td style="${tdMidStyle}">${fii}</td>\n` +
     `<td style="${tdMidStyle}">${vix}</td>\n` +
@@ -349,7 +513,6 @@ function renderSubIndicators(signal) {
   );
 }
 
-/** 9. Historical Context (Template B only) */
 function renderHistoricalContext() {
   return (
     `<tr>\n` +
@@ -376,7 +539,6 @@ function renderHistoricalContext() {
   );
 }
 
-/** Vertical spacer row */
 function renderSpacer(heightPx) {
   return (
     `<tr>\n` +
@@ -385,7 +547,6 @@ function renderSpacer(heightPx) {
   );
 }
 
-/** 10. Footer */
 function renderFooter() {
   return (
     `<tr>\n` +
@@ -414,104 +575,52 @@ function renderFooter() {
 // Formatting helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Format an MMI value to 1 decimal place.
- * @param {number|null} val
- * @returns {string}
- */
 function fmtMMI(val) {
   if (val == null || Number.isNaN(Number(val))) return "—";
   return Number(val).toFixed(1);
 }
 
-/**
- * Format a delta value with explicit sign (+/-).
- * @param {number|null} val
- * @returns {string}
- */
 function fmtDelta(val) {
   if (val == null || Number.isNaN(Number(val))) return "—";
   const n = Number(val);
   return (n >= 0 ? "+" : "") + n.toFixed(1);
 }
 
-/**
- * Format a generic number to `decimals` places.
- * @param {number|null} val
- * @param {number}      [decimals=2]
- * @returns {string}
- */
 function fmtNum(val, decimals) {
   if (val == null || Number.isNaN(Number(val))) return "—";
   return Number(val).toFixed(decimals ?? 2);
 }
 
-/**
- * Format an index closing price as an Indian-style ₹ amount.
- * Uses Intl.NumberFormat with the en-IN locale.
- * @param {number|null} val
- * @returns {string}
- */
 function fmtIndex(val) {
   if (val == null || Number.isNaN(Number(val))) return "—";
   return new Intl.NumberFormat("en-IN", {
-    style:                 "currency",
-    currency:              "INR",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    style: "currency", currency: "INR",
+    minimumFractionDigits: 2, maximumFractionDigits: 2,
   }).format(Number(val));
 }
 
-/**
- * Format an FII flow value (₹ crore) with explicit sign.
- * @param {number|null} val
- * @returns {string}
- */
 function fmtFii(val) {
   if (val == null || Number.isNaN(Number(val))) return "—";
   const n = Number(val);
   return (n >= 0 ? "+" : "") + n.toFixed(2);
 }
 
-/**
- * Convert a zone key to a human-readable label.
- * @param {string} zone
- * @returns {string}
- */
 function zoneLabel(zone) {
   const MAP = {
-    extreme_fear:       "Extreme Fear",
-    fear:               "Fear",
-    greed:              "Greed",
-    extreme_greed:      "Extreme Greed",
-    high_extreme_greed: "High Extreme Greed",
+    extreme_fear: "Extreme Fear", fear: "Fear", greed: "Greed",
+    extreme_greed: "Extreme Greed", high_extreme_greed: "High Extreme Greed",
   };
   return MAP[zone] ?? zone;
 }
 
-/**
- * Convert a momentum key to a human-readable label.
- * @param {string} momentum
- * @returns {string}
- */
 function momentumLabel(momentum) {
   const MAP = {
-    rising_fast:  "Rising Fast",
-    rising:       "Rising",
-    neutral:      "Neutral",
-    falling:      "Falling",
-    falling_fast: "Falling Fast",
+    rising_fast: "Rising Fast", rising: "Rising", neutral: "Neutral",
+    falling: "Falling", falling_fast: "Falling Fast",
   };
   return MAP[momentum] ?? momentum;
 }
 
-/**
- * Convert a 6-digit hex colour to an rgba() string.
- * Example: hexToRgba("#dc2626", 0.10) → "rgba(220,38,38,0.10)"
- * @param {string} hex    - "#rrggbb"
- * @param {number} alpha  - 0–1
- * @returns {string}
- */
 function hexToRgba(hex, alpha) {
   const h = hex.replace("#", "");
   const r = parseInt(h.substring(0, 2), 16);
