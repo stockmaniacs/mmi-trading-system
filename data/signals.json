@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "date": "2026-08-08",
+    "mmi": 81.933945126381,
+    "zone": "high_extreme_greed",
+    "signal": "AVOID",
+    "color": "#dc2626",
+    "emoji": "🔴",
+    "momentum": "rising_fast",
+    "mmiDelta": 3.97,
+    "mmiDeltaWeek": 8.93,
+    "action": "Avoid all new positions. Sit on cash. Market is significantly overbought — a correction is likely.",
+    "analysis": "MMI has surged to 81.9, entering rare High Extreme Greed territory with strong upward momentum (+4.0 pts today). Markets are significantly overbought. VIX at -12.2 suggests complacency. History shows corrections follow such readings. Avoid all new positions and consider booking profits in weaker holdings.",
+    "isHighAlert": true,
+    "nifty50Close": 24570.65,
+    "niftyNext50Close": null,
+    "subIndicators": {
+      "vix": -12.16,
+      "fii": -145118,
+      "skew": -0.28,
+      "momentum": 0.7243482808428793,
+      "trin": 0.4982122364228583,
+      "extrema": 0.11
+    }
+  }
+]
