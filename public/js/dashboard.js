@@ -20,11 +20,11 @@ const HISTORY_URL = 'https://raw.githubusercontent.com/stockmaniacs/mmi-trading-
 // ── Zone meta ───────────────────────────────────────────────────────────────
 
 const ZONE_META = {
-  extreme_fear:       { label: 'Extreme Fear',       color: '#06b6d4' },
-  fear:               { label: 'Fear',               color: '#22c55e' },
-  greed:              { label: 'Greed',              color: '#f59e0b' },
-  extreme_greed:      { label: 'Extreme Greed',      color: '#f97316' },
-  high_extreme_greed: { label: 'High Extreme Greed', color: '#dc2626' },
+  extreme_fear:       { label: 'High Extreme Fear',  color: '#06b6d4' },
+  fear:               { label: 'Extreme Fear',        color: '#22c55e' },
+  greed:              { label: 'Neutral',             color: '#f59e0b' },
+  extreme_greed:      { label: 'Extreme Greed',       color: '#f97316' },
+  high_extreme_greed: { label: 'High Extreme Greed',  color: '#dc2626' },
 };
 
 const MOMENTUM_LABELS = {
@@ -39,7 +39,7 @@ const MOMENTUM_LABELS = {
 
 const inr = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 });
 
-function fmt(v, decimals = 1) {
+function fmt(v, decimals = 2) {
   const n = parseFloat(v);
   return isNaN(n) ? '—' : n.toFixed(decimals);
 }
@@ -49,7 +49,7 @@ function fmtDelta(v) {
   if (isNaN(n)) return { text: '—', cls: '' };
   const sign = n > 0 ? '+' : '';
   const cls  = n > 0.5 ? 'delta-up' : n < -0.5 ? 'delta-down' : 'delta-flat';
-  return { text: sign + n.toFixed(1), cls };
+  return { text: sign + n.toFixed(2), cls };
 }
 
 function zoneColor(zone) {
@@ -224,7 +224,7 @@ function renderMomentum(s) {
   }
 
   setText('momentum-label', MOMENTUM_LABELS[s.momentum] || s.momentum || '—');
-  setText('momentum-sub', '7-day: ' + fmt(s.mmiDeltaWeek, 1) + ' pts');
+  setText('momentum-sub', '7-day: ' + fmt(s.mmiDeltaWeek, 2) + ' pts');
 }
 
 function renderSubIndicators(s) {
@@ -283,17 +283,17 @@ function renderChart(history) {
     extreme_fear_band: {
       type: 'box', yMin: 0, yMax: 30,
       backgroundColor: 'rgba(6,182,212,0.10)', borderWidth: 0,
-      label: { display: true, content: 'Extreme Fear', position: { x: 'start', y: 'center' }, color: '#06b6d4', font: { size: 9 } },
+      label: { display: true, content: 'High Ext. Fear', position: { x: 'start', y: 'center' }, color: '#06b6d4', font: { size: 9 } },
     },
     fear_band: {
       type: 'box', yMin: 30, yMax: 50,
       backgroundColor: 'rgba(34,197,94,0.08)', borderWidth: 0,
-      label: { display: true, content: 'Fear', position: { x: 'start', y: 'center' }, color: '#22c55e', font: { size: 9 } },
+      label: { display: true, content: 'Ext. Fear', position: { x: 'start', y: 'center' }, color: '#22c55e', font: { size: 9 } },
     },
     greed_band: {
       type: 'box', yMin: 50, yMax: 70,
       backgroundColor: 'rgba(245,158,11,0.08)', borderWidth: 0,
-      label: { display: true, content: 'Greed', position: { x: 'start', y: 'center' }, color: '#fbbf24', font: { size: 9 } },
+      label: { display: true, content: 'Neutral', position: { x: 'start', y: 'center' }, color: '#fbbf24', font: { size: 9 } },
     },
     extreme_greed_band: {
       type: 'box', yMin: 70, yMax: 80,
@@ -353,7 +353,7 @@ function renderChart(history) {
             label: (ctx) => {
               const r = slice[ctx.dataIndex] || {};
               return [
-                'MMI: ' + (ctx.raw || 0).toFixed(1),
+                'MMI: ' + (ctx.raw || 0).toFixed(2),
                 'Zone: ' + zoneLabel(r.zone),
                 'Signal: ' + (r.signal || '—'),
               ];
@@ -369,11 +369,11 @@ function renderChart(history) {
 // ── Dual-pane Index vs MMI Chart ──────────────────────────────────────────────
 
 const MMI_ZONE_BANDS = {
-  highly_os: { yMin: 0,  yMax: 30,  bg: 'rgba(6,182,212,0.13)',  label: 'Highly OS', color: '#06b6d4' },
-  os:        { yMin: 30, yMax: 50,  bg: 'rgba(34,197,94,0.09)',  label: 'OS',         color: '#22c55e' },
-  neutral:   { yMin: 50, yMax: 70,  bg: 'rgba(245,158,11,0.07)', label: 'Neutral',    color: '#f59e0b' },
-  ob:        { yMin: 70, yMax: 80,  bg: 'rgba(249,115,22,0.13)', label: 'OB',         color: '#f97316' },
-  highly_ob: { yMin: 80, yMax: 100, bg: 'rgba(220,38,38,0.13)',  label: 'Highly OB',  color: '#dc2626' },
+  high_ext_fear: { yMin: 0,  yMax: 30,  bg: 'rgba(6,182,212,0.13)',  label: 'High Ext. Fear',  color: '#06b6d4' },
+  ext_fear:      { yMin: 30, yMax: 50,  bg: 'rgba(34,197,94,0.09)',  label: 'Ext. Fear',        color: '#22c55e' },
+  neutral:       { yMin: 50, yMax: 70,  bg: 'rgba(245,158,11,0.07)', label: 'Neutral',           color: '#f59e0b' },
+  ext_greed:     { yMin: 70, yMax: 80,  bg: 'rgba(249,115,22,0.13)', label: 'Ext. Greed',       color: '#f97316' },
+  high_ext_greed:{ yMin: 80, yMax: 100, bg: 'rgba(220,38,38,0.13)',  label: 'High Ext. Greed',  color: '#dc2626' },
 };
 
 /**
@@ -418,6 +418,10 @@ function renderIndexMMIChart(
   const mmis   = slice.map(r => parseFloat(r.mmi));
   const dotCol = slice.map(r => zoneColor(r.zone));
 
+  // Price chart: colored dots only on non-neutral zones, invisible on Neutral
+  const priceDotRadius = slice.map(r => r.zone === 'greed' ? 0 : 4);
+  const priceDotColor  = slice.map(r => r.zone === 'greed' ? 'transparent' : zoneColor(r.zone));
+
   const sharedScaleX = {
     grid:  { color: 'rgba(51,65,85,0.5)' },
     ticks: { color: '#94a3b8', font: { size: 10 }, maxRotation: 45, maxTicksLimit: 12 },
@@ -446,8 +450,11 @@ function renderIndexMMIChart(
           borderColor: '#60a5fa',
           backgroundColor: 'rgba(96,165,250,0.07)',
           borderWidth: 2,
-          pointRadius: 2,
-          pointHoverRadius: 5,
+          pointRadius: priceDotRadius,
+          pointHoverRadius: slice.map(r => r.zone === 'greed' ? 0 : 6),
+          pointBackgroundColor: priceDotColor,
+          pointBorderColor: priceDotColor,
+          pointHitRadius: 10,
           tension: 0.3,
           fill: true,
         }],
@@ -534,7 +541,7 @@ function renderIndexMMIChart(
               label: ctx => {
                 const r = slice[ctx.dataIndex] || {};
                 return [
-                  'MMI: ' + ctx.raw.toFixed(1),
+                  'MMI: ' + ctx.raw.toFixed(2),
                   'Zone: ' + zoneLabel(r.zone),
                   'Signal: ' + (r.signal || '—'),
                 ];
@@ -569,7 +576,7 @@ function renderTable(history) {
 
     return `<tr>
       <td>${formatDate(r.date)}</td>
-      <td class="mmi-cell">${fmt(r.mmi, 1)}</td>
+      <td class="mmi-cell">${fmt(r.mmi, 2)}</td>
       <td><span class="zone-badge" style="background:${badgeCol}">${zoneLabel(r.zone)}</span></td>
       <td>${r.emoji || ''} ${r.signal || '—'}</td>
       <td class="${delta.cls}">${delta.text}</td>

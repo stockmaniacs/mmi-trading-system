@@ -35,9 +35,9 @@
   ];
 
   var ZONE_LABELS = {
-    extreme_fear:       'Extreme Fear',
-    fear:               'Fear',
-    greed:              'Greed',
+    extreme_fear:       'High Extreme Fear',
+    fear:               'Extreme Fear',
+    greed:              'Neutral',
     extreme_greed:      'Extreme Greed',
     high_extreme_greed: 'High Extreme Greed',
   };
