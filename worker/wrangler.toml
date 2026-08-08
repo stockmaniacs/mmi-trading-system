@@ -16,10 +16,10 @@ preview_id = "a2bc7c3a579f40388f3d05034beb0a5a"
 GITHUB_REPO        = "stockmaniacs/mmi-trading-system"
 GITHUB_DATA_BRANCH = "main"
 SMTP_HOST          = "smtp.hostinger.com"
-SMTP_PORT          = "465"
 SMTP_USER          = "alerts@stockmaniacs.net"
+# Port 587 + STARTTLS is used by default (hardcoded in emailAlert.js)
 
 # Secrets — set via `wrangler secret put`:
-#   GITHUB_TOKEN        (set)
-#   TRIGGER_TOKEN       (set)
-#   SMTP_PASSWORD       ← one remaining secret
+#   GITHUB_TOKEN    (set)
+#   TRIGGER_TOKEN   (set)
+#   SMTP_PASSWORD   (set)

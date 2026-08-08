@@ -4,9 +4,10 @@
  *
  * Required env bindings:
  *   SMTP_HOST     (var)    — "smtp.hostinger.com"
- *   SMTP_PORT     (var)    — "465"  (direct SSL — simpler than STARTTLS)
  *   SMTP_USER     (var)    — sender address, e.g. "alerts@stockmaniacs.net"
  *   SMTP_PASSWORD (secret) — Hostinger email account password
+ *
+ * Protocol: port 587 with STARTTLS (more widely supported than port 465 SMTPS).
  *
  * Template A — Standard daily alert  (signal.isHighAlert === false)
  *   Subject: "📊 MMI Daily: {mmi} — {signal} | {date}"
@@ -46,7 +47,6 @@ export async function sendEmailAlert(signal, env) {
   try {
     await smtpSend({
       host:        env.SMTP_HOST || "smtp.hostinger.com",
-      port:        parseInt(env.SMTP_PORT || "465", 10),
       user:        env.SMTP_USER,
       pass:        env.SMTP_PASSWORD,
       toAddresses: RECIPIENTS.map((r) => r.email),
@@ -61,48 +61,67 @@ export async function sendEmailAlert(signal, env) {
 }
 
 // ---------------------------------------------------------------------------
-// SMTP client using cloudflare:sockets (direct SSL on port 465)
+// SMTP client using cloudflare:sockets (port 587 + STARTTLS)
 // ---------------------------------------------------------------------------
 
 /**
- * Open an SSL TCP connection to the SMTP server and send one email.
+ * Connect to the SMTP server on port 587 (plaintext), perform STARTTLS to
+ * upgrade to TLS, then authenticate and send one email.
+ *
  * Uses AUTH LOGIN (base64 username + password, standard for Hostinger).
- * Uses Content-Transfer-Encoding: base64 so HTML body is 7-bit safe.
+ * Uses Content-Transfer-Encoding: base64 so the HTML body is 7-bit safe.
+ *
+ * We deliberately use port 587 + STARTTLS rather than port 465 direct SSL
+ * because it is more reliably reachable from Cloudflare Workers edge IPs.
  */
-async function smtpSend({ host, port, user, pass, toAddresses, subject, html }) {
-  const socket = connect(`${host}:${port}`, { secureTransport: "on" });
-  const smtp   = new SMTPReader(socket.readable);
-  const writer = socket.writable.getWriter();
-  const enc    = new TextEncoder();
+async function smtpSend({ host, user, pass, toAddresses, subject, html }) {
+  const enc = new TextEncoder();
 
-  /** Write a CRLF-terminated line to the SMTP stream. */
-  async function write(line) {
-    await writer.write(enc.encode(line + "\r\n"));
-  }
+  // ── 1. Plain connection on port 587 ────────────────────────────────────
+  const plainSocket = connect(`${host}:587`, { secureTransport: "starttls" });
+  let smtp   = new SMTPReader(plainSocket.readable);
+  let writer = plainSocket.writable.getWriter();
 
-  /**
-   * Read a complete SMTP response and assert the expected 3-digit code.
-   * Throws an Error if the actual code differs — caller's try/catch handles it.
-   */
-  async function expect(code) {
+  /** Write one CRLF-terminated command to the current writer. */
+  const write = async (cmd) => writer.write(enc.encode(cmd + "\r\n"));
+
+  /** Read one SMTP response and assert the expected code; throw on mismatch. */
+  const expect = async (code) => {
     const resp = await smtp.readResponse();
     if (resp.code !== code) {
-      throw new Error(
-        `Expected ${code}, got ${resp.code}: ${resp.lines.join(" | ")}`
-      );
+      throw new Error(`Expected ${code}, got ${resp.code}: ${resp.lines.join(" | ")}`);
     }
     return resp;
-  }
+  };
 
   try {
-    // 1. Server greeting
+    // ── 2. Server greeting ─────────────────────────────────────────────
     await expect("220");
 
-    // 2. EHLO — identify ourselves
+    // ── 3. EHLO — discover capabilities ───────────────────────────────
+    await write("EHLO mmi-worker");
+    const ehlo1 = await expect("250");
+
+    // ── 4. STARTTLS ────────────────────────────────────────────────────
+    if (!ehlo1.lines.some((l) => /STARTTLS/i.test(l))) {
+      throw new Error("SMTP server did not advertise STARTTLS capability");
+    }
+    await write("STARTTLS");
+    await expect("220"); // "Go ahead"
+
+    // ── 5. Upgrade to TLS — release plain-socket locks first ──────────
+    smtp.releaseReader();
+    writer.releaseLock();
+
+    const secureSocket = plainSocket.startTls();
+    smtp   = new SMTPReader(secureSocket.readable);
+    writer = secureSocket.writable.getWriter();
+
+    // ── 6. Re-EHLO over TLS ────────────────────────────────────────────
     await write("EHLO mmi-worker");
     await expect("250");
 
-    // 3. AUTH LOGIN — sends credentials as base64
+    // ── 7. AUTH LOGIN ──────────────────────────────────────────────────
     await write("AUTH LOGIN");
     await expect("334"); // "Username:"
     await write(btoa(user));
@@ -110,21 +129,21 @@ async function smtpSend({ host, port, user, pass, toAddresses, subject, html }) 
     await write(btoa(pass));
     await expect("235"); // "Authentication successful"
 
-    // 4. Envelope sender (must match authenticated user on Hostinger)
+    // ── 8. Envelope sender (must match authenticated user on Hostinger) ─
     await write(`MAIL FROM:<${user}>`);
     await expect("250");
 
-    // 5. Envelope recipients
+    // ── 9. Envelope recipients ─────────────────────────────────────────
     for (const addr of toAddresses) {
       await write(`RCPT TO:<${addr}>`);
       await expect("250");
     }
 
-    // 6. DATA command
+    // ── 10. DATA command ───────────────────────────────────────────────
     await write("DATA");
     await expect("354");
 
-    // 7. Build RFC 2822 message — base64 body avoids dot-stuffing and charset issues
+    // ── 11. RFC 2822 message — base64 body avoids dot-stuffing issues ──
     const toHeader = toAddresses.join(", ");
     const b64Html  = utf8ToBase64(html);
     const b64Lines = chunkBase64(b64Html, 76); // RFC 2045: max 76 chars/line
@@ -137,24 +156,24 @@ async function smtpSend({ host, port, user, pass, toAddresses, subject, html }) 
       `MIME-Version: 1.0`,
       `Content-Type: text/html; charset=UTF-8`,
       `Content-Transfer-Encoding: base64`,
-      ``,                  // blank line separates headers from body
+      ``,          // blank line separates headers from body
       ...b64Lines,
-      ``,                  // blank line before DATA terminator
-      `.`,                 // SMTP DATA terminator (trailing \r\n added by write())
+      ``,          // blank line before DATA terminator
+      `.`,         // SMTP end-of-DATA marker (CRLF appended by write())
     ];
 
-    // Write the whole message as one write() call so the terminator
-    // arrives in the correct position relative to the body.
     await write(messageParts.join("\r\n"));
-    await expect("250");
+    await expect("250"); // message accepted
 
-    // 8. QUIT
+    // ── 12. QUIT ───────────────────────────────────────────────────────
     await write("QUIT");
-    // Don't await a 221 — we're done and the server may close first
+    // Don't await 221 — server may close the connection immediately
 
   } finally {
-    try { await writer.close(); } catch (_) { /* ignore */ }
-    socket.close();
+    // Best-effort cleanup — release any remaining stream locks
+    try { smtp.releaseReader(); } catch (_) { /* ignore */ }
+    try { writer.releaseLock();  } catch (_) { /* ignore */ }
+    try { plainSocket.close();   } catch (_) { /* ignore */ }
   }
 }
 
@@ -167,6 +186,11 @@ class SMTPReader {
     this.reader  = readable.getReader();
     this.buffer  = "";
     this.decoder = new TextDecoder();
+  }
+
+  /** Release the reader lock so the socket can be upgraded (STARTTLS). */
+  releaseReader() {
+    try { this.reader.releaseLock(); } catch (_) { /* ignore */ }
   }
 
   /** Read one CRLF-terminated line from the stream. */
@@ -184,7 +208,7 @@ class SMTPReader {
 
   /**
    * Read a complete (possibly multi-line) SMTP response.
-   * Multi-line responses have "NNN-" continuation; the last line has "NNN ".
+   * Multi-line responses use "NNN-" continuation; the final line uses "NNN ".
    * Returns { code: "250", lines: ["250-SIZE 73400320", ..., "250 OK"] }
    */
   async readResponse() {
@@ -192,7 +216,7 @@ class SMTPReader {
     while (true) {
       const line = await this.readLine();
       lines.push(line);
-      // The 4th character is ' ' on the last line, '-' on continuation lines
+      // 4th character is ' ' on the last line, '-' on continuation lines
       if (line.length < 4 || line[3] === " ") break;
     }
     const last = lines[lines.length - 1];
