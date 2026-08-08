@@ -130,7 +130,58 @@
         </div>
       </section>
 
-      <!-- ── 8. HISTORY TABLE ───────────────────────────────── -->
+      <!-- ── 8. NIFTY 50 vs MMI ────────────────────────────── -->
+      <section>
+        <p class="section-title">Nifty 50 vs MMI</p>
+        <div class="card dual-card">
+          <p class="pane-label">Nifty 50 Price</p>
+          <div class="chart-wrapper chart-pane">
+            <canvas id="nifty-price-chart"></canvas>
+          </div>
+          <div class="pane-divider"></div>
+          <p class="pane-label">Market Mood Index
+            <span class="pane-legend">
+              <span style="color:#16a34a">■</span> Highly OS (&lt;30)
+              <span style="color:#22c55e">■</span> OS (30–50)
+              <span style="color:#f59e0b">■</span> Neutral (50–70)
+              <span style="color:#f97316">■</span> OB (70–80)
+              <span style="color:#dc2626">■</span> Highly OB (&gt;80)
+            </span>
+          </p>
+          <div class="chart-wrapper chart-pane">
+            <canvas id="nifty-mmi-lower"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 9. NIFTY NEXT 50 vs MMI ──────────────────────── -->
+      <section>
+        <p class="section-title">Nifty Next 50 vs MMI</p>
+        <div class="card dual-card" id="niftynxt-card">
+          <p class="pane-label">Nifty Next 50 Price</p>
+          <div class="chart-wrapper chart-pane">
+            <canvas id="niftynxt-price-chart"></canvas>
+          </div>
+          <div class="pane-divider"></div>
+          <p class="pane-label">Market Mood Index
+            <span class="pane-legend">
+              <span style="color:#16a34a">■</span> Highly OS (&lt;30)
+              <span style="color:#22c55e">■</span> OS (30–50)
+              <span style="color:#f59e0b">■</span> Neutral (50–70)
+              <span style="color:#f97316">■</span> OB (70–80)
+              <span style="color:#dc2626">■</span> Highly OB (&gt;80)
+            </span>
+          </p>
+          <div class="chart-wrapper chart-pane">
+            <canvas id="niftynxt-mmi-lower"></canvas>
+          </div>
+        </div>
+        <p class="accumulating-note" id="niftynxt-note" style="display:none">
+          📈 Nifty Next 50 data is accumulating — chart will populate as daily signals are recorded.
+        </p>
+      </section>
+
+      <!-- ── 10. HISTORY TABLE ──────────────────────────────── -->
       <section class="table-section">
         <p class="section-title">Recent History (Last 30 Days)</p>
         <div class="table-wrapper">

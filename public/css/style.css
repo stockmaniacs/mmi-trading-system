@@ -325,6 +325,57 @@ footer a:hover { text-decoration: underline; }
 /* ── Main content (hidden until data ready) ──────────────────── */
 #main-content { display: none; }
 
+/* ── Dual-pane Index vs MMI charts ──────────────────────────── */
+.dual-card {
+  padding: 16px 20px;
+}
+
+.pane-label {
+  font-size: .67rem;
+  text-transform: uppercase;
+  letter-spacing: 1.1px;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pane-legend {
+  font-size: .62rem;
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 400;
+  color: var(--text-muted);
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.chart-pane {
+  height: 200px;
+  margin-top: 0;
+}
+
+.pane-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 14px 0;
+}
+
+.accumulating-note {
+  font-size: .78rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 640px) {
   .grid-2 { grid-template-columns: 1fr; }

@@ -94,7 +94,11 @@ async function fetchJSON(url, opts = {}) {
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
-let mmiChart = null;
+let mmiChart        = null;
+let niftyPriceChart = null;
+let niftyMMIChart   = null;
+let nxtPriceChart   = null;
+let nxtMMIChart     = null;
 
 async function init() {
   // Footer year
@@ -160,6 +164,20 @@ async function init() {
   renderSubIndicators(signal);
   renderAnalysis(signal);
   renderChart(history);
+  renderIndexMMIChart(
+    history, 'nifty50Close',
+    'nifty-price-chart', 'nifty-mmi-lower',
+    () => niftyPriceChart, c => { niftyPriceChart = c; },
+    () => niftyMMIChart,   c => { niftyMMIChart   = c; },
+    'Nifty 50'
+  );
+  renderIndexMMIChart(
+    history, 'niftyNext50Close',
+    'niftynxt-price-chart', 'niftynxt-mmi-lower',
+    () => nxtPriceChart, c => { nxtPriceChart = c; },
+    () => nxtMMIChart,   c => { nxtMMIChart   = c; },
+    'Nifty Next 50'
+  );
   renderTable(history);
   renderHeader(signal);
 
@@ -346,6 +364,189 @@ function renderChart(history) {
       },
     },
   });
+}
+
+// ── Dual-pane Index vs MMI Chart ──────────────────────────────────────────────
+
+const MMI_ZONE_BANDS = {
+  highly_os: { yMin: 0,  yMax: 30,  bg: 'rgba(22,163,74,0.13)',  label: 'Highly OS', color: '#16a34a' },
+  os:        { yMin: 30, yMax: 50,  bg: 'rgba(34,197,94,0.09)',  label: 'OS',         color: '#22c55e' },
+  neutral:   { yMin: 50, yMax: 70,  bg: 'rgba(245,158,11,0.07)', label: 'Neutral',    color: '#f59e0b' },
+  ob:        { yMin: 70, yMax: 80,  bg: 'rgba(249,115,22,0.13)', label: 'OB',         color: '#f97316' },
+  highly_ob: { yMin: 80, yMax: 100, bg: 'rgba(220,38,38,0.13)',  label: 'Highly OB',  color: '#dc2626' },
+};
+
+/**
+ * Render a dual-pane (price top / MMI bottom) chart for a given index.
+ * Only uses records where indexKey is a non-null number.
+ * Shows a "data accumulating" note if fewer than 5 points are available.
+ */
+function renderIndexMMIChart(
+  history, indexKey,
+  priceCanvasId, mmiCanvasId,
+  getPriceChart, setPriceChart,
+  getMMIChart,   setMMIChart,
+  indexLabel
+) {
+  // Filter records that have this index value, take last 90, oldest-first
+  const slice = history
+    .filter(r => typeof r[indexKey] === 'number' && r[indexKey] != null)
+    .slice(-90)
+    .reverse()       // history is newest-first
+    .reverse();      // re-reverse → oldest-first for chart left-to-right
+
+  // Show "accumulating" note for Nifty Next 50 when sparse
+  const noteId = indexKey === 'niftyNext50Close' ? 'niftynxt-note' : null;
+  const cardId = indexKey === 'niftyNext50Close' ? 'niftynxt-card' : null;
+  if (noteId) {
+    const noteEl = document.getElementById(noteId);
+    const cardEl = document.getElementById(cardId);
+    if (slice.length < 5) {
+      if (noteEl) noteEl.style.display = 'block';
+      if (cardEl) cardEl.style.display = 'none';
+      return;
+    }
+    if (noteEl) noteEl.style.display = 'none';
+  }
+
+  if (slice.length === 0) return;
+
+  const labels = slice.map(r => {
+    const d = new Date(r.date + 'T00:00:00');
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+  });
+  const prices = slice.map(r => r[indexKey]);
+  const mmis   = slice.map(r => parseFloat(r.mmi));
+  const dotCol = slice.map(r => zoneColor(r.zone));
+
+  const sharedScaleX = {
+    grid:  { color: 'rgba(51,65,85,0.5)' },
+    ticks: { color: '#94a3b8', font: { size: 10 }, maxRotation: 45, maxTicksLimit: 12 },
+  };
+  const sharedTooltip = {
+    backgroundColor: '#1e293b', borderColor: '#334155', borderWidth: 1,
+    titleColor: '#f1f5f9', bodyColor: '#94a3b8', padding: 10,
+  };
+
+  // ── Destroy old instances ────────────────────────────────────
+  const oldPrice = getPriceChart();
+  if (oldPrice) { oldPrice.destroy(); }
+  const oldMMI = getMMIChart();
+  if (oldMMI)   { oldMMI.destroy(); }
+
+  // ── Top pane: Index price ────────────────────────────────────
+  const priceCtx = document.getElementById(priceCanvasId);
+  if (priceCtx) {
+    setPriceChart(new Chart(priceCtx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: indexLabel,
+          data: prices,
+          borderColor: '#60a5fa',
+          backgroundColor: 'rgba(96,165,250,0.07)',
+          borderWidth: 2,
+          pointRadius: 2,
+          pointHoverRadius: 5,
+          tension: 0.3,
+          fill: true,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: sharedScaleX,
+          y: {
+            grid:  { color: 'rgba(51,65,85,0.5)' },
+            ticks: {
+              color: '#94a3b8', font: { size: 10 },
+              callback: v => inr.format(Math.round(v)),
+            },
+          },
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            ...sharedTooltip,
+            callbacks: {
+              label: ctx => `${indexLabel}: ₹${inr.format(ctx.raw)}`,
+            },
+          },
+          annotation: { annotations: {} },
+        },
+      },
+    }));
+  }
+
+  // ── Bottom pane: MMI with OB/OS zone bands ───────────────────
+  const mmiAnnotations = {};
+  for (const [key, b] of Object.entries(MMI_ZONE_BANDS)) {
+    mmiAnnotations[key] = {
+      type: 'box', yMin: b.yMin, yMax: b.yMax,
+      backgroundColor: b.bg, borderWidth: 0,
+      label: {
+        display: true, content: b.label,
+        position: { x: 'end', y: 'center' },
+        color: b.color, font: { size: 9, weight: '600' },
+      },
+    };
+  }
+
+  const mmiCtx = document.getElementById(mmiCanvasId);
+  if (mmiCtx) {
+    setMMIChart(new Chart(mmiCtx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'MMI',
+          data: mmis,
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245,158,11,0.06)',
+          borderWidth: 2,
+          pointRadius: 2.5,
+          pointHoverRadius: 5,
+          pointBackgroundColor: dotCol,
+          pointBorderColor:     dotCol,
+          tension: 0.35,
+          fill: false,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: sharedScaleX,
+          y: {
+            min: 0, max: 100,
+            grid:  { color: 'rgba(51,65,85,0.5)' },
+            ticks: { color: '#94a3b8', font: { size: 10 }, stepSize: 20 },
+          },
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            ...sharedTooltip,
+            callbacks: {
+              label: ctx => {
+                const r = slice[ctx.dataIndex] || {};
+                return [
+                  'MMI: ' + ctx.raw.toFixed(1),
+                  'Zone: ' + zoneLabel(r.zone),
+                  'Signal: ' + (r.signal || '—'),
+                ];
+              },
+            },
+          },
+          annotation: { annotations: mmiAnnotations },
+        },
+      },
+    }));
+  }
 }
 
 // ── History Table ──────────────────────────────────────────────────────────────
