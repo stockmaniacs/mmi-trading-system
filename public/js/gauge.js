@@ -27,7 +27,7 @@
   var CX = 150, CY = 150, R = 120, SW = 16; // cx, cy, radius, strokeWidth
 
   var SEGMENTS = [
-    { from: 0,  to: 30,  color: '#16a34a' }, // extreme_fear   — green
+    { from: 0,  to: 30,  color: '#06b6d4' }, // extreme_fear   — cyan (distinct from fear green)
     { from: 30, to: 50,  color: '#22c55e' }, // fear           — light green
     { from: 50, to: 70,  color: '#f59e0b' }, // greed          — amber
     { from: 70, to: 80,  color: '#f97316' }, // extreme_greed  — orange

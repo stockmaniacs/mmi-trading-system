@@ -12,7 +12,7 @@
 const ZONES = [
   {
     min: 0,  max: 30,  zone: "extreme_fear",
-    signal: "STRONG BUY", color: "#16a34a", emoji: "🟢",
+    signal: "STRONG BUY", color: "#06b6d4", emoji: "🔵",
     action: "Deploy capital aggressively in tranches. Extreme Fear marks rare, historically reliable buying opportunities.",
   },
   {

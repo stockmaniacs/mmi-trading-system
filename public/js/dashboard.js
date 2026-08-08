@@ -20,7 +20,7 @@ const HISTORY_URL = 'https://raw.githubusercontent.com/stockmaniacs/mmi-trading-
 // ── Zone meta ───────────────────────────────────────────────────────────────
 
 const ZONE_META = {
-  extreme_fear:       { label: 'Extreme Fear',       color: '#16a34a' },
+  extreme_fear:       { label: 'Extreme Fear',       color: '#06b6d4' },
   fear:               { label: 'Fear',               color: '#22c55e' },
   greed:              { label: 'Greed',              color: '#f59e0b' },
   extreme_greed:      { label: 'Extreme Greed',      color: '#f97316' },
@@ -282,13 +282,13 @@ function renderChart(history) {
   const annotations = {
     extreme_fear_band: {
       type: 'box', yMin: 0, yMax: 30,
-      backgroundColor: 'rgba(22,163,74,0.10)', borderWidth: 0,
-      label: { display: true, content: 'Extreme Fear', position: { x: 'start', y: 'center' }, color: '#22c55e', font: { size: 9 } },
+      backgroundColor: 'rgba(6,182,212,0.10)', borderWidth: 0,
+      label: { display: true, content: 'Extreme Fear', position: { x: 'start', y: 'center' }, color: '#06b6d4', font: { size: 9 } },
     },
     fear_band: {
       type: 'box', yMin: 30, yMax: 50,
       backgroundColor: 'rgba(34,197,94,0.08)', borderWidth: 0,
-      label: { display: true, content: 'Fear', position: { x: 'start', y: 'center' }, color: '#4ade80', font: { size: 9 } },
+      label: { display: true, content: 'Fear', position: { x: 'start', y: 'center' }, color: '#22c55e', font: { size: 9 } },
     },
     greed_band: {
       type: 'box', yMin: 50, yMax: 70,
@@ -369,7 +369,7 @@ function renderChart(history) {
 // ── Dual-pane Index vs MMI Chart ──────────────────────────────────────────────
 
 const MMI_ZONE_BANDS = {
-  highly_os: { yMin: 0,  yMax: 30,  bg: 'rgba(22,163,74,0.13)',  label: 'Highly OS', color: '#16a34a' },
+  highly_os: { yMin: 0,  yMax: 30,  bg: 'rgba(6,182,212,0.13)',  label: 'Highly OS', color: '#06b6d4' },
   os:        { yMin: 30, yMax: 50,  bg: 'rgba(34,197,94,0.09)',  label: 'OS',         color: '#22c55e' },
   neutral:   { yMin: 50, yMax: 70,  bg: 'rgba(245,158,11,0.07)', label: 'Neutral',    color: '#f59e0b' },
   ob:        { yMin: 70, yMax: 80,  bg: 'rgba(249,115,22,0.13)', label: 'OB',         color: '#f97316' },
