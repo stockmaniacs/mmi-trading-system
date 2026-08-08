@@ -9,29 +9,31 @@
 // Zone table
 // ---------------------------------------------------------------------------
 
+// Continuous float-safe ranges: < 30, < 50, < 70, < 80, else
+// (integer-gap approach caused 30.5, 50.5, 69.5 etc. to fall through as high_extreme_greed)
 const ZONES = [
   {
-    min: 0,  max: 30,  zone: "extreme_fear",
+    zone: "extreme_fear",
     signal: "STRONG BUY", color: "#06b6d4", emoji: "🔵",
     action: "Deploy capital aggressively in tranches. Extreme Fear marks rare, historically reliable buying opportunities.",
   },
   {
-    min: 31, max: 50,  zone: "fear",
+    zone: "fear",
     signal: "BUY",        color: "#22c55e", emoji: "🟩",
-    action: "Accumulate quality stocks and index funds. Fear zone offers good entries for SIP top-ups and lump-sum deployment.",
+    action: "Accumulate quality stocks and index funds. Extreme Fear zone offers good entries for SIP top-ups and lump-sum deployment.",
   },
   {
-    min: 51, max: 69,  zone: "greed",
+    zone: "greed",
     signal: "HOLD",       color: "#f59e0b", emoji: "🟡",
-    action: "Stay invested in existing holdings. Avoid chasing new positions. Greed is building — maintain discipline.",
+    action: "Stay invested in existing holdings. Avoid chasing new positions. Market is in neutral territory — maintain discipline.",
   },
   {
-    min: 70, max: 80,  zone: "extreme_greed",
+    zone: "extreme_greed",
     signal: "REDUCE",     color: "#f97316", emoji: "🟠",
     action: "Book partial profits, especially in high-beta and overvalued stocks. Reduce allocation to aggressive positions.",
   },
   {
-    min: 81, max: 100, zone: "high_extreme_greed",
+    zone: "high_extreme_greed",
     signal: "AVOID",      color: "#dc2626", emoji: "🔴",
     action: "Avoid all new positions. Sit on cash. Market is significantly overbought — a correction is likely.",
   },
@@ -181,14 +183,16 @@ function buildAnalysis(s) {
 
 /**
  * Classify an MMI value into its zone band.
+ * Uses continuous < comparisons — no integer boundary gaps.
  * @param {number} mmi
  * @returns {object}  matching entry from ZONES
  */
 function classifyZone(mmi) {
-  return (
-    ZONES.find((z) => mmi >= z.min && mmi <= z.max) ??
-    (mmi < 0 ? ZONES[0] : ZONES[ZONES.length - 1])
-  );
+  if (mmi < 30) return ZONES[0]; // extreme_fear:       [0, 30)
+  if (mmi < 50) return ZONES[1]; // fear:               [30, 50)
+  if (mmi < 70) return ZONES[2]; // greed (Neutral):    [50, 70)
+  if (mmi < 80) return ZONES[3]; // extreme_greed:      [70, 80)
+  return ZONES[4];                // high_extreme_greed: [80, 100]
 }
 
 /**

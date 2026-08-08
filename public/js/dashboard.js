@@ -267,8 +267,10 @@ function renderChart(history) {
     const d = new Date(r.date + 'T00:00:00');
     return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
   });
-  const values  = slice.map(r => parseFloat(r.mmi));
-  const colors  = slice.map(r => zoneColor(r.zone));
+  const values      = slice.map(r => parseFloat(r.mmi));
+  const colors      = slice.map(r => zoneColor(r.zone));
+  const dotRadius   = slice.map(r => r.zone === 'greed' ? 0 : 4);
+  const hoverRadius = slice.map(r => r.zone === 'greed' ? 0 : 6);
 
   const ctx = document.getElementById('mmi-chart');
   if (!ctx) return;
@@ -317,10 +319,11 @@ function renderChart(history) {
         borderColor: '#f59e0b',
         backgroundColor: 'rgba(245,158,11,0.08)',
         borderWidth: 2.5,
-        pointRadius: 4,
+        pointRadius: dotRadius,
         pointBackgroundColor: colors,
         pointBorderColor: colors,
-        pointHoverRadius: 6,
+        pointHoverRadius: hoverRadius,
+        pointHitRadius: 10,
         tension: 0.35,
         fill: false,
       }],
