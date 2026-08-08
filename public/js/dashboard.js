@@ -388,12 +388,11 @@ function renderIndexMMIChart(
   getMMIChart,   setMMIChart,
   indexLabel
 ) {
-  // Filter records that have this index value, take last 90, oldest-first
+  // Filter records that have this index value, take 90 newest, oldest-first for chart
   const slice = history
     .filter(r => typeof r[indexKey] === 'number' && r[indexKey] != null)
-    .slice(-90)
-    .reverse()       // history is newest-first
-    .reverse();      // re-reverse → oldest-first for chart left-to-right
+    .slice(0, 90)    // first 90 = 90 newest (history is newest-first)
+    .reverse();      // reverse once → oldest-first for left-to-right chart
 
   // Show "accumulating" note for Nifty Next 50 when sparse
   const noteId = indexKey === 'niftyNext50Close' ? 'niftynxt-note' : null;
