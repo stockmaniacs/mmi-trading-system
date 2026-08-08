@@ -64,14 +64,25 @@ export async function fetchMMI() {
     }
 
     const json = await res.json();
-    const d    = json?.data ?? {};
+    // TickerTape wraps in { data: {...} } but the shape may vary
+    const d = json?.data ?? json ?? {};
 
-    if (typeof d.currentvalue !== "number") {
+    // currentValue / currentvalue — accept either casing
+    const mmiValue = d.currentValue ?? d.currentvalue;
+    if (typeof mmiValue !== "number") {
       throw new Error(
-        `Unexpected response shape — missing data.currentvalue. ` +
+        `Unexpected response shape — no numeric currentValue/currentvalue. ` +
         `Keys found: ${Object.keys(d).join(", ")}`
       );
     }
+
+    // lastDay / lastday / lastWeek / lastweek — accept either casing
+    const lastDay   = d.lastDay   ?? d.lastday   ?? {};
+    const lastWeek  = d.lastWeek  ?? d.lastweek  ?? {};
+    const lastMonth = d.lastMonth ?? d.lastmonth ?? {};
+
+    // Historical MMI value may be under "indicator" or "mmi"
+    const histMmi = (obj) => obj?.indicator ?? obj?.mmi ?? obj?.currentValue ?? null;
 
     // Today's date in IST
     const today = new Date(Date.now() + 5.5 * 60 * 60 * 1000)
@@ -80,7 +91,7 @@ export async function fetchMMI() {
 
     return {
       date:      today,
-      mmi:       d.currentvalue,
+      mmi:       mmiValue,
       indicator: d.indicator,
       raw:       d.raw ?? {},
       vix:       d.vix,
@@ -91,9 +102,9 @@ export async function fetchMMI() {
       extrema:   d.extrema,
       fma:       d.fma,
       sma:       d.sma,
-      lastday:   { date: d.lastday?.date,   mmi: d.lastday?.indicator   },
-      lastweek:  { date: d.lastweek?.date,  mmi: d.lastweek?.indicator  },
-      lastmonth: { date: d.lastmonth?.date, mmi: d.lastmonth?.indicator },
+      lastday:   { date: lastDay.date,   mmi: histMmi(lastDay)   },
+      lastweek:  { date: lastWeek.date,  mmi: histMmi(lastWeek)  },
+      lastmonth: { date: lastMonth.date, mmi: histMmi(lastMonth) },
     };
 
   } catch (err) {

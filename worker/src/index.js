@@ -5,10 +5,11 @@
  *   crons = ["30 10 * * 1-5"]   →   10:30 UTC = 4:00 PM IST, weekdays
  *
  * HTTP endpoints:
- *   GET  /api/signal              latest signal (JSON)
- *   GET  /api/history             all signals (JSON array)
- *   GET  /api/health              { status: "ok", lastUpdated }
- *   GET  /api/trigger?token=<T>   manual run (requires TRIGGER_TOKEN secret)
+ *   GET  /api/signal                        latest signal (JSON)
+ *   GET  /api/history                       all signals (JSON array)
+ *   GET  /api/health                        { status: "ok", lastUpdated }
+ *   GET  /api/trigger?token=<T>             manual run — respects market-open check
+ *   GET  /api/trigger?token=<T>&force=true  force run regardless of day/holiday
  */
 
 import { getHolidays, isMarketOpen } from './fetchHolidays.js';
@@ -24,10 +25,77 @@ import { sendEmailAlert }             from './emailAlert.js';
 
 /**
  * Returns today's date string ("YYYY-MM-DD") in the Asia/Kolkata timezone.
- * Uses the en-CA locale which produces ISO-style YYYY-MM-DD output.
  */
 function getTodayIST() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+}
+
+// ---------------------------------------------------------------------------
+// Core pipeline (shared by cron and manual trigger)
+// ---------------------------------------------------------------------------
+
+/**
+ * Run the full MMI signal pipeline.
+ *
+ * @param {object}  env   - Cloudflare Worker env bindings
+ * @param {boolean} force - when true, skips the market-open check
+ */
+async function runSignalPipeline(env, force = false) {
+  const today = getTodayIST();
+
+  // Step 1: Get NSE holidays (KV-cached, 30-day TTL)
+  const holidays = await getHolidays(env);
+
+  // Step 2: Market-open guard (bypassed when force=true)
+  if (!force && !isMarketOpen(today, holidays)) {
+    console.log(`[pipeline] Market closed on ${today} — skipping run`);
+    return;
+  }
+  if (force) {
+    console.log(`[pipeline] force=true — bypassing market-open check for ${today}`);
+  }
+
+  // Step 3: Fetch live MMI from TickerTape
+  let mmiData;
+  try {
+    mmiData = await fetchMMI();
+  } catch (err) {
+    console.error(`[pipeline] MMI fetch failed: ${err.message} — aborting`);
+    return;
+  }
+
+  // Step 4: Fetch index closes from Yahoo Finance (non-throwing)
+  const indicesData = await fetchIndices();
+
+  // Step 5: Read previous signal from KV for delta calculation
+  const prevRaw    = await env.MMI_KV.get('latest-signal');
+  const previousMMI = prevRaw ? JSON.parse(prevRaw).mmi : null;
+
+  // Step 6: Compute signal
+  const signal = computeSignal(mmiData, indicesData, previousMMI);
+
+  // Step 7: Persist to KV
+  await env.MMI_KV.put('latest-signal', JSON.stringify(signal));
+  await env.MMI_KV.put('last-updated',  new Date().toISOString());
+
+  // Step 8: Push to GitHub (non-fatal on failure)
+  try {
+    await pushToGitHub(signal, env);
+  } catch (err) {
+    console.error(`[pipeline] GitHub push failed: ${err.message}`);
+  }
+
+  // Step 9: Send email alert via Hostinger SMTP (non-fatal on failure)
+  try {
+    await sendEmailAlert(signal, env);
+  } catch (err) {
+    console.error(`[pipeline] Email alert failed: ${err.message}`);
+  }
+
+  console.log(
+    `[pipeline] Done — MMI=${signal.mmi} | Zone=${signal.zone} | ` +
+    `Signal=${signal.signal} | Momentum=${signal.momentum} | Date=${today}`
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -35,60 +103,9 @@ function getTodayIST() {
 // ---------------------------------------------------------------------------
 
 export default {
-  // ── Cron handler ──────────────────────────────────────────────────────────
+  // ── Cron handler (calls pipeline with force=false) ────────────────────────
   async scheduled(event, env, ctx) {
-    const today = getTodayIST();
-
-    // Step 1: Get holidays from Upstox API (cached in KV for 30 days)
-    const holidays = await getHolidays(env);
-
-    // Step 2: Check if market is open today
-    if (!isMarketOpen(today, holidays)) {
-      console.log(`Market closed on ${today} — skipping run`);
-      return;
-    }
-
-    // Step 3: Fetch MMI and index data in parallel
-    let mmiData;
-    try {
-      mmiData = await fetchMMI();
-    } catch (err) {
-      console.error(`[scheduled] MMI fetch failed: ${err.message} — aborting run`);
-      return; // Can't compute a signal without MMI
-    }
-
-    const indicesData = await fetchIndices(); // non-throwing; returns nulls on failure
-
-    // Step 4: Read previous signal from KV for delta calculation
-    const prevRaw    = await env.MMI_KV.get('latest-signal');
-    const previousMMI = prevRaw ? JSON.parse(prevRaw).mmi : null;
-
-    // Step 5: Compute the signal
-    const signal = computeSignal(mmiData, indicesData, previousMMI);
-
-    // Step 6: Write latest signal + timestamp to KV
-    await env.MMI_KV.put('latest-signal', JSON.stringify(signal));
-    await env.MMI_KV.put('last-updated',  new Date().toISOString());
-
-    // Step 7: Append to history, update KV signals-history, commit to GitHub
-    try {
-      await pushToGitHub(signal, env);
-    } catch (err) {
-      console.error(`[scheduled] GitHub push failed: ${err.message}`);
-      // Non-fatal — KV is the live source of truth; GitHub is the persisted backup
-    }
-
-    // Step 8: Send email alert
-    try {
-      await sendEmailAlert(signal, env);
-    } catch (err) {
-      console.error(`[scheduled] Email alert failed: ${err.message}`);
-    }
-
-    console.log(
-      `Done: MMI=${signal.mmi} | Signal=${signal.signal} | ` +
-      `Zone=${signal.zone} | Momentum=${signal.momentum} | Date=${today}`
-    );
+    await runSignalPipeline(env, false);
   },
 
   // ── HTTP handler ──────────────────────────────────────────────────────────
@@ -132,14 +149,16 @@ export default {
       );
     }
 
-    // Manual trigger — protected by TRIGGER_TOKEN secret
+    // Manual trigger — protected by TRIGGER_TOKEN
+    // ?force=true bypasses the market-open check (safe for testing on weekends)
     if (
       url.pathname === '/api/trigger' &&
       url.searchParams.get('token') === env.TRIGGER_TOKEN
     ) {
-      ctx.waitUntil(this.scheduled({}, env, ctx));
+      const force = url.searchParams.get('force') === 'true';
+      ctx.waitUntil(runSignalPipeline(env, force));
       return new Response(
-        JSON.stringify({ status: 'triggered', date: getTodayIST() }),
+        JSON.stringify({ status: 'triggered', date: getTodayIST(), force }),
         { headers }
       );
     }
