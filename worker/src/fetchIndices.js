@@ -4,7 +4,7 @@
  *
  * Endpoints:
  *   Nifty 50:      https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI?interval=1d&range=1d
- *   Nifty Next 50: https://query1.finance.yahoo.com/v8/finance/chart/NIFTY_NEXT_50.NS?interval=1d&range=1d
+ *   Nifty Next 50: https://query1.finance.yahoo.com/v8/finance/chart/%5ENSMIDCP?interval=1d&range=1d
  *
  * Response shape (relevant excerpt):
  * {
@@ -31,8 +31,8 @@ const INDICES = [
   },
   {
     key:    "niftyNext50",
-    url:    `${YAHOO_BASE}/NIFTY_NEXT_50.NS?interval=1d&range=1d`,
-    symbol: "NIFTY_NEXT_50.NS",
+    url:    `${YAHOO_BASE}/%5ENSMIDCP?interval=1d&range=1d`,
+    symbol: "^NSMIDCP",
   },
 ];
 
