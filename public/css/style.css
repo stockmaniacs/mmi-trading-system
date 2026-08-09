@@ -59,10 +59,20 @@ header {
 }
 
 .header-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 1.05rem;
   font-weight: 700;
   white-space: nowrap;
   color: var(--text);
+}
+
+.header-gauge-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
 }
 
 .header-title {
