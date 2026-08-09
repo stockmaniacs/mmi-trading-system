@@ -27,17 +27,19 @@
   var CX = 150, CY = 150, R = 120, SW = 16; // cx, cy, radius, strokeWidth
 
   var SEGMENTS = [
-    { from: 0,  to: 20,  color: '#06b6d4' }, // extreme_fear        — cyan  [0, 20)
-    { from: 20, to: 30,  color: '#22c55e' }, // fear                — green [20, 30)
-    { from: 30, to: 70,  color: '#f59e0b' }, // greed (Neutral)     — amber [30, 70)
-    { from: 70, to: 80,  color: '#f97316' }, // extreme_greed       — orange[70, 80)
-    { from: 80, to: 100, color: '#dc2626' }, // high_extreme_greed  — red   [80, 100]
+    { from: 0,  to: 20,  color: '#06b6d4' }, // high_extreme_fear  — cyan    [0,  20)
+    { from: 20, to: 30,  color: '#22c55e' }, // extreme_fear       — green   [20, 30)
+    { from: 30, to: 50,  color: '#84cc16' }, // fear               — lime    [30, 50)
+    { from: 50, to: 70,  color: '#f59e0b' }, // greed              — amber   [50, 70)
+    { from: 70, to: 80,  color: '#f97316' }, // extreme_greed      — orange  [70, 80)
+    { from: 80, to: 100, color: '#dc2626' }, // high_extreme_greed — red     [80, 100]
   ];
 
   var ZONE_LABELS = {
-    extreme_fear:       'High Extreme Fear',
-    fear:               'Extreme Fear',
-    greed:              'Neutral',
+    high_extreme_fear:  'High Extreme Fear',
+    extreme_fear:       'Extreme Fear',
+    fear:               'Fear',
+    greed:              'Greed',
     extreme_greed:      'Extreme Greed',
     high_extreme_greed: 'High Extreme Greed',
   };
