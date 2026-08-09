@@ -188,9 +188,9 @@ function buildAnalysis(s) {
  * @returns {object}  matching entry from ZONES
  */
 function classifyZone(mmi) {
-  if (mmi < 30) return ZONES[0]; // extreme_fear:       [0, 30)
-  if (mmi < 50) return ZONES[1]; // fear:               [30, 50)
-  if (mmi < 70) return ZONES[2]; // greed (Neutral):    [50, 70)
+  if (mmi < 20) return ZONES[0]; // extreme_fear:       [0,  20)
+  if (mmi < 30) return ZONES[1]; // fear:               [20, 30)
+  if (mmi < 70) return ZONES[2]; // greed (Neutral):    [30, 70)
   if (mmi < 80) return ZONES[3]; // extreme_greed:      [70, 80)
   return ZONES[4];                // high_extreme_greed: [80, 100]
 }

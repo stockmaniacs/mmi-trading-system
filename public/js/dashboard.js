@@ -268,9 +268,11 @@ function renderChart(history) {
     return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
   });
   const values      = slice.map(r => parseFloat(r.mmi));
+  // Show dots ONLY for signal zones: < 20 (extreme_fear), 20-30 (fear), 70-80 (extreme_greed), >80 (high_extreme_greed)
+  const SIGNAL_DOT = new Set(['extreme_fear', 'fear', 'extreme_greed', 'high_extreme_greed']);
   const colors      = slice.map(r => zoneColor(r.zone));
-  const dotRadius   = slice.map(r => r.zone === 'greed' ? 0 : 4);
-  const hoverRadius = slice.map(r => r.zone === 'greed' ? 0 : 6);
+  const dotRadius   = slice.map(r => SIGNAL_DOT.has(r.zone) ? 4 : 0);
+  const hoverRadius = slice.map(r => SIGNAL_DOT.has(r.zone) ? 6 : 0);
 
   const ctx = document.getElementById('mmi-chart');
   if (!ctx) return;
@@ -280,20 +282,20 @@ function renderChart(history) {
     mmiChart = null;
   }
 
-  // Zone band annotations (10% opacity fills)
+  // Zone band annotations — updated thresholds: <20 HighExtFear, 20-30 ExtFear, 30-70 Neutral, 70-80 ExtGreed, >80 HighExtGreed
   const annotations = {
     extreme_fear_band: {
-      type: 'box', yMin: 0, yMax: 30,
+      type: 'box', yMin: 0, yMax: 20,
       backgroundColor: 'rgba(6,182,212,0.10)', borderWidth: 0,
       label: { display: true, content: 'High Ext. Fear', position: { x: 'start', y: 'center' }, color: '#06b6d4', font: { size: 9 } },
     },
     fear_band: {
-      type: 'box', yMin: 30, yMax: 50,
+      type: 'box', yMin: 20, yMax: 30,
       backgroundColor: 'rgba(34,197,94,0.08)', borderWidth: 0,
       label: { display: true, content: 'Ext. Fear', position: { x: 'start', y: 'center' }, color: '#22c55e', font: { size: 9 } },
     },
     greed_band: {
-      type: 'box', yMin: 50, yMax: 70,
+      type: 'box', yMin: 30, yMax: 70,
       backgroundColor: 'rgba(245,158,11,0.08)', borderWidth: 0,
       label: { display: true, content: 'Neutral', position: { x: 'start', y: 'center' }, color: '#fbbf24', font: { size: 9 } },
     },
@@ -371,10 +373,11 @@ function renderChart(history) {
 
 // ── Dual-pane Index vs MMI Chart ──────────────────────────────────────────────
 
+// Updated zone thresholds: <20 HighExtFear, 20-30 ExtFear, 30-70 Neutral, 70-80 ExtGreed, >80 HighExtGreed
 const MMI_ZONE_BANDS = {
-  high_ext_fear: { yMin: 0,  yMax: 30,  bg: 'rgba(6,182,212,0.13)',  label: 'High Ext. Fear',  color: '#06b6d4' },
-  ext_fear:      { yMin: 30, yMax: 50,  bg: 'rgba(34,197,94,0.09)',  label: 'Ext. Fear',        color: '#22c55e' },
-  neutral:       { yMin: 50, yMax: 70,  bg: 'rgba(245,158,11,0.07)', label: 'Neutral',           color: '#f59e0b' },
+  high_ext_fear: { yMin: 0,  yMax: 20,  bg: 'rgba(6,182,212,0.13)',  label: 'High Ext. Fear',  color: '#06b6d4' },
+  ext_fear:      { yMin: 20, yMax: 30,  bg: 'rgba(34,197,94,0.09)',  label: 'Ext. Fear',        color: '#22c55e' },
+  neutral:       { yMin: 30, yMax: 70,  bg: 'rgba(245,158,11,0.07)', label: 'Neutral',           color: '#f59e0b' },
   ext_greed:     { yMin: 70, yMax: 80,  bg: 'rgba(249,115,22,0.13)', label: 'Ext. Greed',       color: '#f97316' },
   high_ext_greed:{ yMin: 80, yMax: 100, bg: 'rgba(220,38,38,0.13)',  label: 'High Ext. Greed',  color: '#dc2626' },
 };
@@ -419,11 +422,12 @@ function renderIndexMMIChart(
   });
   const prices = slice.map(r => r[indexKey]);
   const mmis   = slice.map(r => parseFloat(r.mmi));
-  const dotCol = slice.map(r => zoneColor(r.zone));
 
-  // Price chart: colored dots only on non-neutral zones, invisible on Neutral
-  const priceDotRadius = slice.map(r => r.zone === 'greed' ? 0 : 4);
-  const priceDotColor  = slice.map(r => r.zone === 'greed' ? 'transparent' : zoneColor(r.zone));
+  // Show dots ONLY for signal zones: <20 (extreme_fear), 20-30 (fear), 70-80 (extreme_greed), >80 (high_extreme_greed)
+  const IDX_SIGNAL_DOT = new Set(['extreme_fear', 'fear', 'extreme_greed', 'high_extreme_greed']);
+  const priceDotRadius = slice.map(r => IDX_SIGNAL_DOT.has(r.zone) ? 4 : 0);
+  const priceDotColor  = slice.map(r => IDX_SIGNAL_DOT.has(r.zone) ? zoneColor(r.zone) : 'transparent');
+  const dotCol         = slice.map(r => IDX_SIGNAL_DOT.has(r.zone) ? zoneColor(r.zone) : '#94a3b8');
 
   const sharedScaleX = {
     grid:  { color: 'rgba(51,65,85,0.5)' },
@@ -454,7 +458,7 @@ function renderIndexMMIChart(
           backgroundColor: 'rgba(96,165,250,0.07)',
           borderWidth: 2,
           pointRadius: priceDotRadius,
-          pointHoverRadius: slice.map(r => r.zone === 'greed' ? 0 : 6),
+          pointHoverRadius: slice.map(r => IDX_SIGNAL_DOT.has(r.zone) ? 6 : 0),
           pointBackgroundColor: priceDotColor,
           pointBorderColor: priceDotColor,
           pointHitRadius: 10,
@@ -516,8 +520,8 @@ function renderIndexMMIChart(
           borderColor: '#f59e0b',
           backgroundColor: 'rgba(245,158,11,0.06)',
           borderWidth: 2,
-          pointRadius: 2.5,
-          pointHoverRadius: 5,
+          pointRadius: slice.map(r => IDX_SIGNAL_DOT.has(r.zone) ? 3.5 : 0),
+          pointHoverRadius: slice.map(r => IDX_SIGNAL_DOT.has(r.zone) ? 5 : 0),
           pointBackgroundColor: dotCol,
           pointBorderColor:     dotCol,
           tension: 0.35,
