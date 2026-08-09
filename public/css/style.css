@@ -387,14 +387,76 @@ footer a:hover { text-decoration: underline; }
 }
 
 /* ── Responsive ──────────────────────────────────────────────── */
-@media (max-width: 640px) {
-  .grid-2 { grid-template-columns: 1fr; }
-  .grid-3 { grid-template-columns: 1fr 1fr; }
-  .header-title { display: none; }
-  .card-value { font-size: 1.2rem; }
-  .signal-badge { font-size: .95rem; padding: 8px 22px; }
+
+/* ── Tablet: ≤ 768px ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Legend: stack below pane title on narrow screens */
+  .pane-label { flex-direction: column; align-items: flex-start; }
+  .pane-legend { margin-left: 0; width: 100%; }
+
+  /* Slightly shorter dual-pane charts */
+  .chart-pane { height: 170px; }
 }
 
+/* ── Phone: ≤ 640px ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Layout */
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+
+  /* Header */
+  .header-title { display: none; }
+  .header-gauge-icon { width: 28px; height: 28px; }
+  .header-logo { font-size: .97rem; }
+
+  /* Cards */
+  .card { padding: 14px 16px; }
+  .card-value { font-size: 1.25rem; }
+  .card-label { font-size: .67rem; }
+
+  /* Hero */
+  .hero { padding: 20px 0 14px; }
+  .signal-badge { font-size: .95rem; padding: 8px 24px; }
+  .signal-action { font-size: .84rem; }
+
+  /* Charts */
+  .chart-wrapper { height: 220px; }
+  .chart-pane    { height: 150px; }
+
+  /* Analysis */
+  .analysis-text { font-size: .86rem; }
+
+  /* Table font */
+  table { font-size: .8rem; }
+  thead th, tbody td { padding: 9px 11px; }
+}
+
+/* ── Small phone: ≤ 420px ────────────────────────────────────── */
 @media (max-width: 420px) {
+  /* Full-width single column for all grids */
+  .grid-2 { grid-template-columns: 1fr; }
   .grid-3 { grid-template-columns: 1fr; }
+
+  /* Container breathing room */
+  .container { padding: 0 12px; }
+
+  /* Header tighter */
+  .header-logo { font-size: .9rem; gap: 6px; }
+  .header-gauge-icon { width: 26px; height: 26px; border-radius: 6px; }
+  .header-updated { font-size: .66rem; }
+
+  /* Cards */
+  .card { padding: 12px 14px; }
+  .card-value { font-size: 1.15rem; }
+
+  /* Hero */
+  .hero { padding: 16px 0 12px; }
+  .signal-badge { font-size: .88rem; padding: 7px 20px; letter-spacing: 1.5px; }
+
+  /* Charts — more compact on very small screens */
+  .chart-wrapper { height: 190px; }
+  .chart-pane    { height: 130px; }
+
+  /* Section spacing */
+  section { margin-bottom: 12px; }
 }
