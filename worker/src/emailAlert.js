@@ -177,8 +177,8 @@ function renderHeader(headerBg) {
 function renderHighAlertBanner(signal) {
   const bgTint = hexToRgba(signal.color, 0.10);
   const warningText =
-    signal.zone === "extreme_fear"
-      ? `Extreme Fear detected — MMI at ${fmtMMI(signal.mmi)}. ` +
+    signal.zone === "high_extreme_fear"
+      ? `High Extreme Fear detected — MMI at ${fmtMMI(signal.mmi)}. ` +
         `Historically, this zone marks rare buying opportunities. ` +
         `Review your investment plan before acting.`
       : `Market Euphoria Warning — MMI at ${fmtMMI(signal.mmi)}. ` +
@@ -458,8 +458,12 @@ function fmtFii(val) {
 
 function zoneLabel(zone) {
   const MAP = {
-    extreme_fear: "Extreme Fear", fear: "Fear", greed: "Greed",
-    extreme_greed: "Extreme Greed", high_extreme_greed: "High Extreme Greed",
+    high_extreme_fear:  "High Extreme Fear",
+    extreme_fear:       "Extreme Fear",
+    fear:               "Fear",
+    greed:              "Greed",
+    extreme_greed:      "Extreme Greed",
+    high_extreme_greed: "High Extreme Greed",
   };
   return MAP[zone] ?? zone;
 }
