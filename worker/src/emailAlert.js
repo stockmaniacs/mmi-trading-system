@@ -1,17 +1,15 @@
 /**
  * emailAlert.js
- * Sends MMI signal alerts via a PHP relay hosted on Hostinger.
+ * Sends MMI signal alerts via the Brevo Transactional Email API.
  *
  * Architecture:
- *   Worker --HTTPS POST--> ipoindiahub.com/mmi-relay.php
- *                          --STARTTLS:587--> smtp.hostinger.com
+ *   Worker --HTTPS POST--> api.brevo.com/v3/smtp/email
  *
- * Cloudflare Workers edge IPs are blocked by Hostinger SMTP directly.
- * The PHP relay runs on Hostinger's own network where SMTP is always allowed.
+ * Brevo handles DKIM signing and deliverability. Same API used by PEAD Radar.
+ * No intermediate relay needed — the Worker calls Brevo directly.
  *
  * Required env bindings:
- *   RELAY_URL   (var)    — "https://ipoindiahub.com/mmi-relay.php"
- *   RELAY_TOKEN (secret) — shared token checked by the PHP relay
+ *   BREVO_API_KEY (secret) — Brevo transactional API key
  *
  * Template A — Standard daily alert  (signal.isHighAlert === false)
  *   Subject: "📊 MMI Daily: {mmi} — {signal} | {date}"
@@ -36,7 +34,7 @@ const RECIPIENTS = [
 // ---------------------------------------------------------------------------
 
 /**
- * Send the MMI signal alert email via Hostinger SMTP.
+ * Send the MMI signal alert email via Brevo Transactional API.
  * Email failures are logged but DO NOT throw — must not abort the cron job.
  *
  * @param {object} signal - return value of computeSignal()
@@ -46,46 +44,39 @@ export async function sendEmailAlert(signal, env) {
   const subject  = buildSubject(signal);
   const htmlBody = generateEmailHTML(signal);
 
-  const relayUrl   = env.RELAY_URL;
-  const relayToken = env.RELAY_TOKEN;
-
-  if (!relayUrl || !relayToken) {
-    console.error("[emailAlert] RELAY_URL or RELAY_TOKEN not configured — skipping");
+  const apiKey = env.BREVO_API_KEY;
+  if (!apiKey) {
+    console.error("[emailAlert] BREVO_API_KEY not configured — skipping");
     return;
   }
 
   try {
-    const res = await fetch(relayUrl, {
+    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
       method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({
-        token:   relayToken,
-        to:      RECIPIENTS.map((r) => r.email),
+      headers: {
+        "Content-Type": "application/json",
+        "api-key":      apiKey,
+      },
+      body: JSON.stringify({
+        sender:      { name: "StockManiacs Alerts", email: "alerts@stockmaniacs.net" },
+        to:          RECIPIENTS,
         subject,
-        html:    htmlBody,
+        htmlContent: htmlBody,
       }),
       signal: AbortSignal.timeout(20_000),
     });
 
     const body = await res.text();
     if (!res.ok) {
-      throw new Error(`Relay HTTP ${res.status}: ${body}`);
+      throw new Error(`Brevo HTTP ${res.status}: ${body}`);
     }
 
-    const result = JSON.parse(body);
-    if (!result.success) {
-      throw new Error(`Relay returned failure: ${body}`);
-    }
-
-    console.log(`[emailAlert] Sent via relay: ${subject}`);
+    console.log(`[emailAlert] Sent via Brevo: ${subject}`);
   } catch (err) {
-    console.error(`[emailAlert] Relay send failed — ${err.message}`);
+    console.error(`[emailAlert] Brevo send failed — ${err.message}`);
     // Do NOT throw — email failure must not abort the cron job
   }
 }
-
-// (SMTP client removed — email is sent via PHP relay on Hostinger;
-//  see hostinger/mmi-relay.php in the repo for the server-side code)
 
 // ---------------------------------------------------------------------------
 // Exported: HTML generator (pure function, no side effects)
