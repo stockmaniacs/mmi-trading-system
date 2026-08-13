@@ -14,8 +14,9 @@
 
 // ── Config ─────────────────────────────────────────────────────────────────
 
-const API_BASE    = 'https://mmi-worker.stockmaniacs.workers.dev';
-const HISTORY_URL = 'https://raw.githubusercontent.com/stockmaniacs/mmi-trading-system/main/data/signals.json';
+const API_BASE          = 'https://mmi-worker.stockmaniacs.workers.dev';
+const HISTORY_URL       = 'https://raw.githubusercontent.com/stockmaniacs/mmi-trading-system/main/data/signals.json';
+const FULL_HISTORY_URL  = 'https://raw.githubusercontent.com/stockmaniacs/mmi-trading-system/main/data/mmi-history.json';
 
 // ── Zone meta ───────────────────────────────────────────────────────────────
 
@@ -102,36 +103,97 @@ let niftyMMIChart   = null;
 let nxtPriceChart   = null;
 let nxtMMIChart     = null;
 
+// Full 353-record history (oldest-first) for 3M/6M/1Y chart views
+let fullHistory = [];
+let activeRange = '6M';
+
+/**
+ * Filter an oldest-first history array to the last N calendar months.
+ * Returns a sub-array still in oldest-first order.
+ *
+ * @param {Array}  history - oldest-first array with { date: "YYYY-MM-DD", … }
+ * @param {number} months  - how many calendar months back to include
+ * @returns {Array}
+ */
+function filterByRange(history, months) {
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - months);
+  const cutoffStr = cutoff.toISOString().slice(0, 10); // "YYYY-MM-DD"
+  return history.filter(r => r.date >= cutoffStr);
+}
+
+/**
+ * Re-render all three chart sections for the given range label ("3M"|"6M"|"1Y").
+ * Uses the global fullHistory array (oldest-first, full dataset).
+ */
+function renderAllCharts(range) {
+  const months   = range === '3M' ? 3 : range === '6M' ? 6 : 12;
+  const filtered = filterByRange(fullHistory, months);
+
+  renderChart(filtered);
+  renderIndexMMIChart(
+    filtered, 'nifty50Close',
+    'nifty-price-chart', 'nifty-mmi-lower',
+    () => niftyPriceChart, c => { niftyPriceChart = c; },
+    () => niftyMMIChart,   c => { niftyMMIChart   = c; },
+    'Nifty 50'
+  );
+  renderIndexMMIChart(
+    filtered, 'niftyNext50Close',
+    'niftynxt-price-chart', 'niftynxt-mmi-lower',
+    () => nxtPriceChart, c => { nxtPriceChart = c; },
+    () => nxtMMIChart,   c => { nxtMMIChart   = c; },
+    'Nifty Next 50'
+  );
+}
+
 async function init() {
   // Footer year
   const fyEl = document.getElementById('footer-year');
   if (fyEl) fyEl.textContent = new Date().getFullYear();
 
   let signal  = null;
-  let history = [];   // newest-first (as stored in signals.json)
+  let history = [];   // newest-first (signals.json — used for table only)
   let apiError = null;
 
-  // ── 1. Fetch live signal ─────────────────────────────────────────────────
-  try {
-    const raw = await fetchJSON(`${API_BASE}/api/signal`);
-    // Treat {} (empty KV — no cron run yet) the same as a failed fetch
+  // ── 1. Fetch live signal, recent history, and full history in parallel ───
+  const [signalResult, historyResult, fullHistoryResult] = await Promise.allSettled([
+    fetchJSON(`${API_BASE}/api/signal`),
+    fetchJSON(HISTORY_URL),
+    fetchJSON(FULL_HISTORY_URL),
+  ]);
+
+  // Live signal
+  if (signalResult.status === 'fulfilled') {
+    const raw = signalResult.value;
     if (raw && typeof raw.mmi === 'number') {
       signal = raw;
     } else {
       apiError = 'No signal yet — showing latest from history.';
     }
-  } catch (err) {
+  } else {
     apiError = 'Live signal unavailable — showing latest from history.';
   }
 
-  // ── 2. Fetch history ─────────────────────────────────────────────────────
-  try {
-    const raw = await fetchJSON(HISTORY_URL);
+  // Recent history (newest-first, for table)
+  if (historyResult.status === 'fulfilled') {
+    const raw = historyResult.value;
     if (Array.isArray(raw) && raw.length > 0) {
       history = raw;
     }
-  } catch (_) {
-    // history unavailable — proceed with live signal only
+  }
+
+  // Full history (oldest-first, for charts)
+  if (fullHistoryResult.status === 'fulfilled') {
+    const raw = fullHistoryResult.value;
+    if (Array.isArray(raw) && raw.length > 0) {
+      fullHistory = raw; // mmi-history.json is already oldest-first
+    }
+  }
+
+  // Fall back to reversing signals.json if full history couldn't be loaded
+  if (fullHistory.length === 0 && history.length > 0) {
+    fullHistory = [...history].reverse(); // make oldest-first
   }
 
   // ── 3. Fallback: use history[0] if live API failed ───────────────────────
@@ -165,23 +227,29 @@ async function init() {
   renderMomentum(signal);
   renderSubIndicators(signal);
   renderAnalysis(signal);
-  renderChart(history);
-  renderIndexMMIChart(
-    history, 'nifty50Close',
-    'nifty-price-chart', 'nifty-mmi-lower',
-    () => niftyPriceChart, c => { niftyPriceChart = c; },
-    () => niftyMMIChart,   c => { niftyMMIChart   = c; },
-    'Nifty 50'
-  );
-  renderIndexMMIChart(
-    history, 'niftyNext50Close',
-    'niftynxt-price-chart', 'niftynxt-mmi-lower',
-    () => nxtPriceChart, c => { nxtPriceChart = c; },
-    () => nxtMMIChart,   c => { nxtMMIChart   = c; },
-    'Nifty Next 50'
-  );
-  renderTable(history);
+  renderAllCharts(activeRange);    // renders all three chart sections (3M/6M/1Y)
+  renderTable(history);            // table always uses signals.json (newest-first, 30 rows)
   renderHeader(signal);
+
+  // ── 6. Wire range selector buttons ───────────────────────────
+  const rangeTabsEl = document.getElementById('range-tabs');
+  if (rangeTabsEl) {
+    rangeTabsEl.addEventListener('click', e => {
+      const btn = e.target.closest('.range-btn');
+      if (!btn) return;
+      const range = btn.dataset.range;
+      if (range === activeRange) return;
+
+      activeRange = range;
+
+      // Update active styling
+      rangeTabsEl.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      // Re-render all charts with new range
+      renderAllCharts(range);
+    });
+  }
 
   hide('loading-overlay');
   show('main-content');
@@ -257,14 +325,14 @@ function renderHeader(s) {
 // ── Chart ─────────────────────────────────────────────────────────────────────
 
 /**
- * Render a 30-day line chart using Chart.js 4 + annotation plugin.
- * history is newest-first; chart needs oldest-first → slice(0,30).reverse()
+ * Render the MMI trend chart using Chart.js 4 + annotation plugin.
+ * history must be oldest-first (already filtered to the selected range).
  */
 function renderChart(history) {
   if (!history.length) return;
 
-  // Up to 30 newest entries, oldest-first for chart
-  const slice   = history.slice(0, 30).reverse();
+  // history is oldest-first, pre-filtered to the selected range
+  const slice   = history;
   const labels  = slice.map(r => {
     const d = new Date(r.date + 'T00:00:00');
     return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
@@ -344,7 +412,7 @@ function renderChart(history) {
       scales: {
         x: {
           grid:  { color: 'rgba(51,65,85,0.6)' },
-          ticks: { color: '#94a3b8', font: { size: 10 }, maxRotation: 45 },
+          ticks: { color: '#94a3b8', font: { size: 10 }, maxRotation: 45, maxTicksLimit: 12 },
         },
         y: {
           min: 0, max: 100,
@@ -402,11 +470,9 @@ function renderIndexMMIChart(
   getMMIChart,   setMMIChart,
   indexLabel
 ) {
-  // Filter records that have this index value, take 90 newest, oldest-first for chart
+  // Filter records that have this index value; history is already oldest-first, pre-filtered
   const slice = history
-    .filter(r => typeof r[indexKey] === 'number' && r[indexKey] != null)
-    .slice(0, 90)    // first 90 = 90 newest (history is newest-first)
-    .reverse();      // reverse once → oldest-first for left-to-right chart
+    .filter(r => typeof r[indexKey] === 'number' && r[indexKey] != null);
 
   // Show "accumulating" note for Nifty Next 50 when sparse
   const noteId = indexKey === 'niftyNext50Close' ? 'niftynxt-note' : null;

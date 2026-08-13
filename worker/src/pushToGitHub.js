@@ -117,8 +117,12 @@ async function getFile(filename, env) {
 
   const file = await res.json();
 
-  // GitHub folds base64 at 60 chars with newlines — strip before decoding
-  const data = JSON.parse(atob(file.content.replace(/\n/g, "")));
+  // GitHub folds base64 at 60 chars with newlines — strip before decoding.
+  // decodeURIComponent(escape(...)) converts the raw UTF-8 binary string that
+  // atob() produces into a proper JS string, preserving emoji correctly.
+  const binary = atob(file.content.replace(/\n/g, ""));
+  const utf8   = decodeURIComponent(escape(binary));
+  const data   = JSON.parse(utf8);
 
   return { data, sha: file.sha };
 }

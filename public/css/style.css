@@ -222,6 +222,46 @@ section { margin-bottom: 14px; }
   margin-top: 4px;
 }
 
+/* ── Range selector tabs ─────────────────────────────────────── */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.section-header .section-title {
+  margin-bottom: 0;
+}
+
+.range-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.range-btn {
+  padding: 4px 13px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: .73rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+  letter-spacing: .6px;
+}
+
+.range-btn:hover {
+  color: var(--text);
+}
+
+.range-btn.active {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #1a1a1a;
+}
+
 /* ── History Table ───────────────────────────────────────────── */
 .table-section { margin-bottom: 0; }
 
