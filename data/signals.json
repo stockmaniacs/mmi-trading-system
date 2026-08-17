@@ -24,6 +24,30 @@
     }
   },
   {
+    "date": "2026-08-14",
+    "mmi": 62.6904382244237,
+    "zone": "greed",
+    "signal": "HOLD",
+    "color": "#f59e0b",
+    "emoji": "🟡",
+    "momentum": "falling",
+    "mmiDelta": -2.95,
+    "mmiDeltaWeek": -19.24,
+    "action": "Greed zone (50–70): stay cautious about new positions. If MMI is heading toward Extreme Greed → reduce exposure. If cooling from Extreme Greed → wait for a better entry before deploying fresh capital.",
+    "analysis": "MMI has dipped to 62.7 within the Greed zone (-3.0 pts today, -19.2 pts this week). Greed is reducing. More patience is suggested before looking for fresh opportunities — wait for MMI to drop toward Fear or Extreme Fear for a better entry point.",
+    "isHighAlert": false,
+    "nifty50Close": 24366.0,
+    "niftyNext50Close": null,
+    "subIndicators": {
+      "vix": -11.31,
+      "fii": -168702.0,
+      "skew": -0.72,
+      "momentum": 0.75614557093587,
+      "trin": 0.8420550338561993,
+      "extrema": 0.066
+    }
+  },
+  {
     "date": "2026-08-13",
     "mmi": 65.64109734067448,
     "zone": "greed",
@@ -2126,30 +2150,6 @@
     "isHighAlert": false,
     "nifty50Close": 23997.35,
     "niftyNext50Close": 66145.3,
-    "subIndicators": {
-      "vix": null,
-      "fii": null,
-      "skew": null,
-      "momentum": null,
-      "trin": null,
-      "extrema": null
-    }
-  },
-  {
-    "date": "2026-04-07",
-    "mmi": 36.93,
-    "zone": "fear",
-    "signal": "WATCH",
-    "color": "#84cc16",
-    "emoji": "🟡",
-    "momentum": "rising",
-    "mmiDelta": 2.03,
-    "mmiDeltaWeek": 13.98,
-    "action": "Fear zone (30Ã¢ÂÂ50): action depends on trajectory. If MMI is falling Ã¢ÂÂ wait for Extreme Fear (<30) as a better entry. If MMI is recovering from Extreme Fear Ã¢ÂÂ selective positions may be considered.",
-    "analysis": "MMI at 36.9 Ã¢ÂÂ Fear zone with recovery momentum (+2.0 pts). Good entry zone for SIPs and quality stocks.",
-    "isHighAlert": false,
-    "nifty50Close": 23123.65,
-    "niftyNext50Close": 63151.05,
     "subIndicators": {
       "vix": null,
       "fii": null,
