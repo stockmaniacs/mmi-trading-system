@@ -134,9 +134,15 @@ export default {
       return new Response(data || '{}', { headers });
     }
 
-    // Full signal history
+    // Full signal history (last 90, newest-first)
     if (url.pathname === '/api/history') {
       const data = await env.MMI_KV.get('signals-history');
+      return new Response(data || '[]', { headers });
+    }
+
+    // Complete history — all records oldest-first (for 3M/6M/1Y charts)
+    if (url.pathname === '/api/full-history') {
+      const data = await env.MMI_KV.get('full-history');
       return new Response(data || '[]', { headers });
     }
 

@@ -69,8 +69,11 @@ export async function pushToGitHub(signal, env) {
     const { sha: signalsSha } = await getFile("signals.json", env);
     await putFile("signals.json", last90, signalsSha, commitMsg, env);
 
-    // ── Step 6: Cache last 90 in KV so /api/history is served without GitHub ──
+    // ── Step 6: Cache in KV ───────────────────────────────────────────────────
+    // signals-history: last 90 newest-first → /api/history
+    // full-history:    all records oldest-first → /api/full-history (charts)
     await env.MMI_KV.put("signals-history", JSON.stringify(last90));
+    await env.MMI_KV.put("full-history",    JSON.stringify(history));
 
     console.log(
       `[pushToGitHub] Done — ` +

@@ -15,10 +15,9 @@
 // ── Config ─────────────────────────────────────────────────────────────────
 
 const API_BASE          = 'https://mmi-worker.stockmaniacs.workers.dev';
-// KV-backed endpoint — no GitHub rate-limit risk, always fresh
-const HISTORY_URL       = `${API_BASE}/api/history`;
-// jsDelivr CDN over GitHub — no rate-limit, global CDN cache (~12h lag after push is fine)
-const FULL_HISTORY_URL  = 'https://cdn.jsdelivr.net/gh/stockmaniacs/mmi-trading-system@main/data/mmi-history.json';
+// Both served from Cloudflare KV via the Worker — no rate-limits, always fresh
+const HISTORY_URL       = `${API_BASE}/api/history`;       // last 90, newest-first (table)
+const FULL_HISTORY_URL  = `${API_BASE}/api/full-history`;  // all records, oldest-first (charts)
 
 // ── Zone meta ───────────────────────────────────────────────────────────────
 
