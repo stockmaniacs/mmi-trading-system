@@ -1,5 +1,29 @@
 [
   {
+    "date": "2026-08-19",
+    "mmi": 48.96077628709036,
+    "zone": "fear",
+    "signal": "WATCH",
+    "color": "#84cc16",
+    "emoji": "🟡",
+    "momentum": "falling_fast",
+    "mmiDelta": -5.11,
+    "mmiDeltaWeek": -23.84,
+    "action": "Fear zone (30–50): action depends on trajectory. If MMI is falling → wait for Extreme Fear (<30) as a better entry. If MMI is recovering from Extreme Fear → selective positions may be considered.",
+    "analysis": "MMI has fallen to 49.0 in the Fear zone (-5.1 pts today). Fear is increasing — action depends on trajectory. With MMI dropping, it may be prudent to wait for Extreme Fear (below 30), which is historically a stronger entry point. Prepare your watchlist and stagger planned buys.",
+    "isHighAlert": false,
+    "nifty50Close": 24078.3,
+    "niftyNext50Close": 73900.65,
+    "subIndicators": {
+      "vix": -11.32,
+      "fii": -194158,
+      "skew": -0.64,
+      "momentum": 0.5758146602224035,
+      "trin": -0.07481742957139846,
+      "extrema": 0.046
+    }
+  },
+  {
     "date": "2026-08-18",
     "mmi": 54.05066936996785,
     "zone": "greed",
@@ -2126,30 +2150,6 @@
     "isHighAlert": false,
     "nifty50Close": 24050.6,
     "niftyNext50Close": 67641.25,
-    "subIndicators": {
-      "vix": null,
-      "fii": null,
-      "skew": null,
-      "momentum": null,
-      "trin": null,
-      "extrema": null
-    }
-  },
-  {
-    "date": "2026-04-09",
-    "mmi": 48.8,
-    "zone": "fear",
-    "signal": "WATCH",
-    "color": "#84cc16",
-    "emoji": "🟡",
-    "momentum": "rising_fast",
-    "mmiDelta": 6.4,
-    "mmiDeltaWeek": 30.33,
-    "action": "Fear zone (30Ã¢ÂÂ50): action depends on trajectory. If MMI is falling Ã¢ÂÂ wait for Extreme Fear (<30) as a better entry. If MMI is recovering from Extreme Fear Ã¢ÂÂ selective positions may be considered.",
-    "analysis": "MMI at 48.8 Ã¢ÂÂ Fear zone with recovery momentum (+6.4 pts). Good entry zone for SIPs and quality stocks.",
-    "isHighAlert": false,
-    "nifty50Close": 23775.1,
-    "niftyNext50Close": 66268.65,
     "subIndicators": {
       "vix": null,
       "fii": null,
