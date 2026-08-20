@@ -8614,5 +8614,29 @@
       "trin": -0.07481742957139846,
       "extrema": 0.046
     }
+  },
+  {
+    "date": "2026-08-20",
+    "mmi": 42.50305927771127,
+    "zone": "fear",
+    "signal": "WATCH",
+    "color": "#84cc16",
+    "emoji": "🟡",
+    "momentum": "falling_fast",
+    "mmiDelta": -6.46,
+    "mmiDeltaWeek": -23.14,
+    "action": "Fear zone (30–50): action depends on trajectory. If MMI is falling → wait for Extreme Fear (<30) as a better entry. If MMI is recovering from Extreme Fear → selective positions may be considered.",
+    "analysis": "MMI has fallen to 42.5 in the Fear zone (-6.5 pts today). Fear is increasing — action depends on trajectory. With MMI dropping, it may be prudent to wait for Extreme Fear (below 30), which is historically a stronger entry point. Prepare your watchlist and stagger planned buys.",
+    "isHighAlert": false,
+    "nifty50Close": 24231.85,
+    "niftyNext50Close": 74194.15,
+    "subIndicators": {
+      "vix": -10.76,
+      "fii": -209807,
+      "skew": -0.9,
+      "momentum": 0.5414823028730189,
+      "trin": 0.05673062895006211,
+      "extrema": 0.054
+    }
   }
 ]
