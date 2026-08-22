@@ -78,9 +78,39 @@ async function runSignalPipeline(env, force = false) {
   await env.MMI_KV.put('latest-signal', JSON.stringify(signal));
   await env.MMI_KV.put('last-updated',  new Date().toISOString());
 
+  // Step 7b: Detect missing previous trading day for self-healing backfill
+  // TickerTape's lastday field gives yesterday's MMI — if that date isn't in
+  // our history yet (e.g. yesterday's cron failed), we compute a record for it
+  // and pass it to pushToGitHub to insert alongside today's entry.
+  let backfillSignal = null;
+  const lastdayDate = mmiData.lastday?.date?.slice(0, 10);
+  const lastdayMmi  = mmiData.lastday?.mmi;
+  if (lastdayDate && lastdayMmi != null && lastdayDate !== today) {
+    const fhRaw = await env.MMI_KV.get('full-history');
+    const fullHistory = fhRaw ? JSON.parse(fhRaw) : [];
+    if (!fullHistory.some((r) => r.date === lastdayDate)) {
+      // Find the most recent entry before lastdayDate to compute delta
+      const prevEntry = fullHistory.filter((r) => r.date < lastdayDate).slice(-1)[0];
+      const backfillMmiData = {
+        date:      lastdayDate,
+        mmi:       lastdayMmi,
+        indicator: null, raw: {}, vix: null, fii: null, skew: null,
+        momentum:  null, trin: null, extrema: null, fma: null, sma: null,
+        lastday:   { date: null, mmi: null },
+        lastweek:  { date: null, mmi: null },
+        lastmonth: { date: null, mmi: null },
+      };
+      backfillSignal = computeSignal(backfillMmiData, null, prevEntry?.mmi ?? null);
+      console.log(
+        `[pipeline] Missing ${lastdayDate} detected — ` +
+        `backfill prepared (MMI ${lastdayMmi.toFixed(2)}, ${backfillSignal.signal})`
+      );
+    }
+  }
+
   // Step 8: Push to GitHub (non-fatal on failure)
   try {
-    await pushToGitHub(signal, env);
+    await pushToGitHub(signal, env, backfillSignal);
   } catch (err) {
     console.error(`[pipeline] GitHub push failed: ${err.message}`);
   }
