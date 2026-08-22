@@ -123,9 +123,9 @@
     var labels =
       '<text x="' + CX + '" y="' + valueY + '"' +
             ' text-anchor="middle" dominant-baseline="middle"' +
-            ' fill="white" font-size="26" font-weight="700"' +
+            ' fill="white" font-size="22" font-weight="700"' +
             ' font-family="system-ui,sans-serif">' +
-            v.toFixed(1) +
+            v.toFixed(2) +
       '</text>' +
       '<text x="' + CX + '" y="' + labelY + '"' +
             ' text-anchor="middle" dominant-baseline="middle"' +
@@ -136,7 +136,7 @@
 
     el.innerHTML =
       '<svg viewBox="0 0 300 160" xmlns="http://www.w3.org/2000/svg"' +
-           ' role="img" aria-label="MMI Gauge: ' + v.toFixed(1) + '">' +
+           ' role="img" aria-label="MMI Gauge: ' + v.toFixed(2) + '">' +
         bg + segs + needle + hub + labels +
       '</svg>';
   };

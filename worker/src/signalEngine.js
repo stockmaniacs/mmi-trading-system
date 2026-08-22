@@ -72,10 +72,10 @@ const MOMENTUM = {
  * @returns {string}
  */
 function buildAnalysis(s) {
-  const mmi       = s.mmi.toFixed(1);
-  const delta     = s.mmiDelta     >= 0 ? `+${s.mmiDelta.toFixed(1)}`     : s.mmiDelta.toFixed(1);
-  const deltaWeek = s.mmiDeltaWeek >= 0 ? `+${s.mmiDeltaWeek.toFixed(1)}` : s.mmiDeltaWeek.toFixed(1);
-  const vix       = s.subIndicators?.vix != null ? s.subIndicators.vix.toFixed(1) : "N/A";
+  const mmi       = s.mmi.toFixed(2);
+  const delta     = s.mmiDelta     >= 0 ? `+${s.mmiDelta.toFixed(2)}`     : s.mmiDelta.toFixed(2);
+  const deltaWeek = s.mmiDeltaWeek >= 0 ? `+${s.mmiDeltaWeek.toFixed(2)}` : s.mmiDeltaWeek.toFixed(2);
+  const vix       = s.subIndicators?.vix != null ? s.subIndicators.vix.toFixed(2) : "N/A";
   const { zone, momentum } = s;
 
   // ── HIGH EXTREME GREED (>80) ─────────────────────────────────────────────
