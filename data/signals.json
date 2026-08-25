@@ -1,5 +1,29 @@
 [
   {
+    "date": "2026-08-25",
+    "mmi": 54.82205272609606,
+    "zone": "greed",
+    "signal": "HOLD",
+    "color": "#f59e0b",
+    "emoji": "🟡",
+    "momentum": "rising_fast",
+    "mmiDelta": 5.02,
+    "mmiDeltaWeek": 0.75,
+    "action": "Greed zone (50–70): stay cautious about new positions. If MMI is heading toward Extreme Greed → reduce exposure. If cooling from Extreme Greed → wait for a better entry before deploying fresh capital.",
+    "analysis": "MMI has risen to 54.82, moving toward Extreme Greed territory (+5.02 pts today, +0.75 pts this week). Greed is increasing — be cautious about opening new positions. Stay invested in quality holdings but resist chasing momentum. Monitor for a push above 70.",
+    "isHighAlert": false,
+    "nifty50Close": null,
+    "niftyNext50Close": null,
+    "subIndicators": {
+      "vix": -11.08,
+      "fii": -219383,
+      "skew": -0.42,
+      "momentum": 0.478011429933809,
+      "trin": 1.245241790285037,
+      "extrema": 0.028
+    }
+  },
+  {
     "date": "2026-08-24",
     "mmi": 49.80664312630961,
     "zone": "fear",
@@ -2126,30 +2150,6 @@
     "isHighAlert": false,
     "nifty50Close": 24353.55,
     "niftyNext50Close": 70273.8,
-    "subIndicators": {
-      "vix": null,
-      "fii": null,
-      "skew": null,
-      "momentum": null,
-      "trin": null,
-      "extrema": null
-    }
-  },
-  {
-    "date": "2026-04-16",
-    "mmi": 65.55,
-    "zone": "greed",
-    "signal": "HOLD",
-    "color": "#f59e0b",
-    "emoji": "🟡",
-    "momentum": "rising",
-    "mmiDelta": 1.91,
-    "mmiDeltaWeek": 23.15,
-    "action": "Greed zone (50Ã¢ÂÂ70): stay cautious about new positions. If MMI is heading toward Extreme Greed Ã¢ÂÂ reduce exposure. If cooling from Extreme Greed Ã¢ÂÂ wait for a better entry before deploying fresh capital.",
-    "analysis": "MMI at 65.5 Ã¢ÂÂ Greed zone, rising (+1.9 pts). Stay invested in quality holdings but resist chasing momentum.",
-    "isHighAlert": false,
-    "nifty50Close": 24196.75,
-    "niftyNext50Close": 69300.6,
     "subIndicators": {
       "vix": null,
       "fii": null,
