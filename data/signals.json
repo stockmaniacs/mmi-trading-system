@@ -1,5 +1,53 @@
 [
   {
+    "date": "2026-09-07",
+    "mmi": 46.63764917012416,
+    "zone": "fear",
+    "signal": "WATCH",
+    "color": "#84cc16",
+    "emoji": "🟡",
+    "momentum": "rising",
+    "mmiDelta": 2.77,
+    "mmiDeltaWeek": -0.96,
+    "action": "Fear zone (30–50): action depends on trajectory. If MMI is falling → wait for Extreme Fear (<30) as a better entry. If MMI is recovering from Extreme Fear → selective positions may be considered.",
+    "analysis": "MMI is recovering at 46.64 in the Fear zone (+2.77 pts today). Fear is reducing — if MMI has bounced from Extreme Fear (<30), this may be a reasonable moment for selective entry into quality positions. Consider SIP top-ups and adding to high-conviction stocks in small tranches.",
+    "isHighAlert": false,
+    "nifty50Close": 23779.15,
+    "niftyNext50Close": 72575.75,
+    "subIndicators": {
+      "vix": -11.16,
+      "fii": -235838,
+      "skew": -0.41,
+      "momentum": -0.07260574583929934,
+      "trin": 1.1153972368335896,
+      "extrema": -0.012
+    }
+  },
+  {
+    "date": "2026-09-04",
+    "mmi": 43.87194801681042,
+    "zone": "fear",
+    "signal": "WATCH",
+    "color": "#84cc16",
+    "emoji": "🟡",
+    "momentum": "rising_fast",
+    "mmiDelta": 5.28,
+    "mmiDeltaWeek": 0,
+    "action": "Fear zone (30–50): action depends on trajectory. If MMI is falling → wait for Extreme Fear (<30) as a better entry. If MMI is recovering from Extreme Fear → selective positions may be considered.",
+    "analysis": "MMI is recovering at 43.87 in the Fear zone (+5.28 pts today). Fear is reducing — if MMI has bounced from Extreme Fear (<30), this may be a reasonable moment for selective entry into quality positions. Consider SIP top-ups and adding to high-conviction stocks in small tranches.",
+    "isHighAlert": false,
+    "nifty50Close": null,
+    "niftyNext50Close": null,
+    "subIndicators": {
+      "vix": null,
+      "fii": null,
+      "skew": null,
+      "momentum": null,
+      "trin": null,
+      "extrema": null
+    }
+  },
+  {
     "date": "2026-09-03",
     "mmi": 38.58984939294941,
     "zone": "fear",
@@ -2102,54 +2150,6 @@
     "isHighAlert": false,
     "nifty50Close": 23997.55,
     "niftyNext50Close": 69643.9,
-    "subIndicators": {
-      "vix": null,
-      "fii": null,
-      "skew": null,
-      "momentum": null,
-      "trin": null,
-      "extrema": null
-    }
-  },
-  {
-    "date": "2026-04-29",
-    "mmi": 62.59,
-    "zone": "greed",
-    "signal": "HOLD",
-    "color": "#f59e0b",
-    "emoji": "🟡",
-    "momentum": "rising_fast",
-    "mmiDelta": 4.76,
-    "mmiDeltaWeek": -5.79,
-    "action": "Greed zone (50Ã¢ÂÂ70): stay cautious about new positions. If MMI is heading toward Extreme Greed Ã¢ÂÂ reduce exposure. If cooling from Extreme Greed Ã¢ÂÂ wait for a better entry before deploying fresh capital.",
-    "analysis": "MMI at 62.6 Ã¢ÂÂ Greed zone, rising (+4.8 pts). Stay invested in quality holdings but resist chasing momentum.",
-    "isHighAlert": false,
-    "nifty50Close": 24177.65,
-    "niftyNext50Close": 70521.8,
-    "subIndicators": {
-      "vix": null,
-      "fii": null,
-      "skew": null,
-      "momentum": null,
-      "trin": null,
-      "extrema": null
-    }
-  },
-  {
-    "date": "2026-04-28",
-    "mmi": 57.83,
-    "zone": "greed",
-    "signal": "HOLD",
-    "color": "#f59e0b",
-    "emoji": "🟡",
-    "momentum": "falling",
-    "mmiDelta": -1.46,
-    "mmiDeltaWeek": -4.53,
-    "action": "Greed zone (50Ã¢ÂÂ70): stay cautious about new positions. If MMI is heading toward Extreme Greed Ã¢ÂÂ reduce exposure. If cooling from Extreme Greed Ã¢ÂÂ wait for a better entry before deploying fresh capital.",
-    "analysis": "MMI at 57.8 Ã¢ÂÂ Greed zone, momentum cooling (-1.5 pts). Prepare a watchlist; a dip toward Fear offers better entries.",
-    "isHighAlert": false,
-    "nifty50Close": 23995.7,
-    "niftyNext50Close": 70568.2,
     "subIndicators": {
       "vix": null,
       "fii": null,
