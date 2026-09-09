@@ -419,13 +419,13 @@ function renderFooter() {
 
 function fmtMMI(val) {
   if (val == null || Number.isNaN(Number(val))) return "—";
-  return Number(val).toFixed(1);
+  return Number(val).toFixed(2);
 }
 
 function fmtDelta(val) {
   if (val == null || Number.isNaN(Number(val))) return "—";
   const n = Number(val);
-  return (n >= 0 ? "+" : "") + n.toFixed(1);
+  return (n >= 0 ? "+" : "") + n.toFixed(2);
 }
 
 function fmtNum(val, decimals) {
