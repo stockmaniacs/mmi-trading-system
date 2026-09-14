@@ -51,7 +51,6 @@ const STATIC_HOLIDAYS = {
     "2026-04-14", // Dr. Baba Saheb Ambedkar Jayanti
     "2026-05-01", // Maharashtra Day
     "2026-08-15", // Independence Day
-    "2026-09-11", // NSE holiday (confirmed: TickerTape treats as non-trading day)
     "2026-09-14", // NSE holiday (confirmed by user — market was closed)
     "2026-10-02", // Mahatma Gandhi Jayanti
     "2026-10-22", // Dussehra
