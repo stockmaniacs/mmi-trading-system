@@ -1,5 +1,29 @@
 [
   {
+    "date": "2026-09-16",
+    "mmi": 10.359265863513757,
+    "zone": "high_extreme_fear",
+    "signal": "STRONG BUY",
+    "color": "#06b6d4",
+    "emoji": "🔵",
+    "momentum": "falling_fast",
+    "mmiDelta": -11.14,
+    "mmiDeltaWeek": -22.27,
+    "action": "Rare High Extreme Fear — deploy capital aggressively in tranches across index funds and quality large-caps. History marks this as a generational buying opportunity.",
+    "analysis": "MMI has dropped to a rare 10.36 — High Extreme Fear! This level occurs in less than 5% of trading sessions and has historically marked major market bottoms. VIX at -13.17 signals peak pessimism. Deploy capital aggressively in tranches across index funds and quality large-caps. History consistently rewards investors who buy decisively at these levels. This is a generational buying opportunity.",
+    "isHighAlert": true,
+    "nifty50Close": 23217.6,
+    "niftyNext50Close": 70368.6,
+    "subIndicators": {
+      "vix": -13.17,
+      "fii": -291052,
+      "skew": -0.78,
+      "momentum": -0.8763569353719556,
+      "trin": -0.5147407152514863,
+      "extrema": -0.092
+    }
+  },
+  {
     "date": "2026-09-15",
     "mmi": 21.499837790680353,
     "zone": "extreme_fear",
@@ -2126,30 +2150,6 @@
     "isHighAlert": false,
     "nifty50Close": 23815.85,
     "niftyNext50Close": 70297.85,
-    "subIndicators": {
-      "vix": null,
-      "fii": null,
-      "skew": null,
-      "momentum": null,
-      "trin": null,
-      "extrema": null
-    }
-  },
-  {
-    "date": "2026-05-08",
-    "mmi": 68.27,
-    "zone": "greed",
-    "signal": "HOLD",
-    "color": "#f59e0b",
-    "emoji": "🟡",
-    "momentum": "rising_fast",
-    "mmiDelta": 4.18,
-    "mmiDeltaWeek": 4.58,
-    "action": "Greed zone (50Ã¢ÂÂ70): stay cautious about new positions. If MMI is heading toward Extreme Greed Ã¢ÂÂ reduce exposure. If cooling from Extreme Greed Ã¢ÂÂ wait for a better entry before deploying fresh capital.",
-    "analysis": "MMI at 68.3 Ã¢ÂÂ Greed zone, rising (+4.2 pts). Stay invested in quality holdings but resist chasing momentum.",
-    "isHighAlert": false,
-    "nifty50Close": 24176.15,
-    "niftyNext50Close": 71495.6,
     "subIndicators": {
       "vix": null,
       "fii": null,
