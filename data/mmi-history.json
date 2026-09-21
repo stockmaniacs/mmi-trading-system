@@ -9094,5 +9094,53 @@
       "trin": -0.44999878081545996,
       "extrema": -0.05
     }
+  },
+  {
+    "date": "2026-09-18",
+    "mmi": 13.468867633337762,
+    "zone": "high_extreme_fear",
+    "signal": "STRONG BUY",
+    "color": "#06b6d4",
+    "emoji": "🔵",
+    "momentum": "rising_fast",
+    "mmiDelta": 3.4,
+    "mmiDeltaWeek": 0,
+    "action": "Rare High Extreme Fear — deploy capital aggressively in tranches across index funds and quality large-caps. History marks this as a generational buying opportunity.",
+    "analysis": "MMI has dropped to a rare 13.47 — High Extreme Fear! This level occurs in less than 5% of trading sessions and has historically marked major market bottoms. VIX at N/A signals peak pessimism. Deploy capital aggressively in tranches across index funds and quality large-caps. History consistently rewards investors who buy decisively at these levels. This is a generational buying opportunity.",
+    "isHighAlert": true,
+    "nifty50Close": null,
+    "niftyNext50Close": null,
+    "subIndicators": {
+      "vix": null,
+      "fii": null,
+      "skew": null,
+      "momentum": null,
+      "trin": null,
+      "extrema": null
+    }
+  },
+  {
+    "date": "2026-09-21",
+    "mmi": 22.7227389575837,
+    "zone": "extreme_fear",
+    "signal": "BUY",
+    "color": "#22c55e",
+    "emoji": "🟢",
+    "momentum": "rising_fast",
+    "mmiDelta": 9.25,
+    "mmiDeltaWeek": -3.98,
+    "action": "Extreme Fear (<30) suggests a good time to open fresh positions. Markets are likely oversold and may turn upwards. Accumulate quality stocks in 2–3 tranches.",
+    "analysis": "MMI is at 22.72 in Extreme Fear with positive or stable momentum (+9.25 pts today). Fear is reducing — this is a good time to open fresh positions as markets may be turning upwards. Increase SIP top-ups, add selectively to quality mid-caps and blue-chips. Risk-reward is favourable for medium-term investors.",
+    "isHighAlert": false,
+    "nifty50Close": 23429,
+    "niftyNext50Close": 72164.25,
+    "subIndicators": {
+      "vix": -11.25,
+      "fii": -288428,
+      "skew": -1.42,
+      "momentum": -1.0855129643301435,
+      "trin": -0.07457737755731064,
+      "extrema": -0.006
+    }
   }
 ]
