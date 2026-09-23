@@ -9166,5 +9166,29 @@
       "trin": 1.5304025444879559,
       "extrema": -0.014
     }
+  },
+  {
+    "date": "2026-09-23",
+    "mmi": 33.62477060743484,
+    "zone": "fear",
+    "signal": "WATCH",
+    "color": "#84cc16",
+    "emoji": "🟡",
+    "momentum": "rising",
+    "mmiDelta": 2.87,
+    "mmiDeltaWeek": 23.27,
+    "action": "Fear zone (30–50): action depends on trajectory. If MMI is falling → wait for Extreme Fear (<30) as a better entry. If MMI is recovering from Extreme Fear → selective positions may be considered.",
+    "analysis": "MMI is recovering at 33.62 in the Fear zone (+2.87 pts today). Fear is reducing — if MMI has bounced from Extreme Fear (<30), this may be a reasonable moment for selective entry into quality positions. Consider SIP top-ups and adding to high-conviction stocks in small tranches.",
+    "isHighAlert": false,
+    "nifty50Close": 23446.8,
+    "niftyNext50Close": 72462.4,
+    "subIndicators": {
+      "vix": -10.35,
+      "fii": -302908,
+      "skew": -1.69,
+      "momentum": -1.1570053777119953,
+      "trin": 0.5665595148967926,
+      "extrema": 0.004
+    }
   }
 ]
