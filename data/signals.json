@@ -1,5 +1,29 @@
 [
   {
+    "date": "2026-09-24",
+    "mmi": 23.617199832974556,
+    "zone": "extreme_fear",
+    "signal": "BUY",
+    "color": "#22c55e",
+    "emoji": "🟢",
+    "momentum": "falling_fast",
+    "mmiDelta": -10.01,
+    "mmiDeltaWeek": 13.55,
+    "action": "Extreme Fear (<30) suggests a good time to open fresh positions. Markets are likely oversold and may turn upwards. Accumulate quality stocks in 2–3 tranches.",
+    "analysis": "MMI has fallen to 23.62 in Extreme Fear territory (-10.01 pts today). Markets are likely oversold and a turn upwards is possible. Begin opening fresh positions in index funds and quality large-caps in 2–3 tranches. Momentum still suggests further weakness, so stagger entries rather than going all-in.",
+    "isHighAlert": false,
+    "nifty50Close": 23063.1,
+    "niftyNext50Close": 71381.45,
+    "subIndicators": {
+      "vix": -12.69,
+      "fii": -298613,
+      "skew": -1.69,
+      "momentum": -1.2614833156375878,
+      "trin": 0.2515250857853042,
+      "extrema": -0.042
+    }
+  },
+  {
     "date": "2026-09-23",
     "mmi": 33.62477060743484,
     "zone": "fear",
@@ -2126,30 +2150,6 @@
     "isHighAlert": false,
     "nifty50Close": 23618,
     "niftyNext50Close": 68992.35,
-    "subIndicators": {
-      "vix": null,
-      "fii": null,
-      "skew": null,
-      "momentum": null,
-      "trin": null,
-      "extrema": null
-    }
-  },
-  {
-    "date": "2026-05-18",
-    "mmi": 52.67,
-    "zone": "greed",
-    "signal": "HOLD",
-    "color": "#f59e0b",
-    "emoji": "🟡",
-    "momentum": "falling_fast",
-    "mmiDelta": -4.34,
-    "mmiDeltaWeek": -18.72,
-    "action": "Greed zone (50Ã¢ÂÂ70): stay cautious about new positions. If MMI is heading toward Extreme Greed Ã¢ÂÂ reduce exposure. If cooling from Extreme Greed Ã¢ÂÂ wait for a better entry before deploying fresh capital.",
-    "analysis": "MMI at 52.7 Ã¢ÂÂ Greed zone, momentum cooling (-4.3 pts). Prepare a watchlist; a dip toward Fear offers better entries.",
-    "isHighAlert": false,
-    "nifty50Close": 23649.95,
-    "niftyNext50Close": 68618,
     "subIndicators": {
       "vix": null,
       "fii": null,
