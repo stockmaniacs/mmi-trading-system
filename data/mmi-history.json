@@ -9214,5 +9214,53 @@
       "trin": 0.2515250857853042,
       "extrema": -0.042
     }
+  },
+  {
+    "date": "2026-09-25",
+    "mmi": 16.150443447381438,
+    "zone": "high_extreme_fear",
+    "signal": "STRONG BUY",
+    "color": "#06b6d4",
+    "emoji": "🔵",
+    "momentum": "falling_fast",
+    "mmiDelta": -7.47,
+    "mmiDeltaWeek": 0,
+    "action": "Rare High Extreme Fear — deploy capital aggressively in tranches across index funds and quality large-caps. History marks this as a generational buying opportunity.",
+    "analysis": "MMI has dropped to a rare 16.15 — High Extreme Fear! This level occurs in less than 5% of trading sessions and has historically marked major market bottoms. VIX at N/A signals peak pessimism. Deploy capital aggressively in tranches across index funds and quality large-caps. History consistently rewards investors who buy decisively at these levels. This is a generational buying opportunity.",
+    "isHighAlert": true,
+    "nifty50Close": null,
+    "niftyNext50Close": null,
+    "subIndicators": {
+      "vix": null,
+      "fii": null,
+      "skew": null,
+      "momentum": null,
+      "trin": null,
+      "extrema": null
+    }
+  },
+  {
+    "date": "2026-09-28",
+    "mmi": 14.658645657342943,
+    "zone": "high_extreme_fear",
+    "signal": "STRONG BUY",
+    "color": "#06b6d4",
+    "emoji": "🔵",
+    "momentum": "falling",
+    "mmiDelta": -1.49,
+    "mmiDeltaWeek": -8.06,
+    "action": "Rare High Extreme Fear — deploy capital aggressively in tranches across index funds and quality large-caps. History marks this as a generational buying opportunity.",
+    "analysis": "MMI has dropped to a rare 14.66 — High Extreme Fear! This level occurs in less than 5% of trading sessions and has historically marked major market bottoms. VIX at -13.64 signals peak pessimism. Deploy capital aggressively in tranches across index funds and quality large-caps. History consistently rewards investors who buy decisively at these levels. This is a generational buying opportunity.",
+    "isHighAlert": true,
+    "nifty50Close": 22780.25,
+    "niftyNext50Close": 70309.5,
+    "subIndicators": {
+      "vix": -13.64,
+      "fii": -312001,
+      "skew": -1.1,
+      "momentum": -1.4789322601228767,
+      "trin": -0.36653428820863654,
+      "extrema": -0.088
+    }
   }
 ]
