@@ -9286,5 +9286,29 @@
       "trin": 0.9348679242943065,
       "extrema": -0.12
     }
+  },
+  {
+    "date": "2026-09-30",
+    "mmi": 19.183413044052898,
+    "zone": "high_extreme_fear",
+    "signal": "STRONG BUY",
+    "color": "#06b6d4",
+    "emoji": "🔵",
+    "momentum": "rising",
+    "mmiDelta": 2.68,
+    "mmiDeltaWeek": -14.44,
+    "action": "Rare High Extreme Fear — deploy capital aggressively in tranches across index funds and quality large-caps. History marks this as a generational buying opportunity.",
+    "analysis": "MMI has dropped to a rare 19.18 — High Extreme Fear! This level occurs in less than 5% of trading sessions and has historically marked major market bottoms. VIX at -13.49 signals peak pessimism. Deploy capital aggressively in tranches across index funds and quality large-caps. History consistently rewards investors who buy decisively at these levels. This is a generational buying opportunity.",
+    "isHighAlert": true,
+    "nifty50Close": 22620.45,
+    "niftyNext50Close": 69746.95,
+    "subIndicators": {
+      "vix": -13.49,
+      "fii": -267307,
+      "skew": -0.64,
+      "momentum": -1.766178579324519,
+      "trin": -0.4958036981264286,
+      "extrema": -0.1
+    }
   }
 ]
