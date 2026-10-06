@@ -1,5 +1,29 @@
 [
   {
+    "date": "2026-10-06",
+    "mmi": 17.394268030193764,
+    "zone": "high_extreme_fear",
+    "signal": "STRONG BUY",
+    "color": "#06b6d4",
+    "emoji": "🔵",
+    "momentum": "rising_fast",
+    "mmiDelta": 4.8,
+    "mmiDeltaWeek": 2.74,
+    "action": "Rare High Extreme Fear — deploy capital aggressively in tranches across index funds and quality large-caps. History marks this as a generational buying opportunity.",
+    "analysis": "MMI has dropped to a rare 17.39 — High Extreme Fear! This level occurs in less than 5% of trading sessions and has historically marked major market bottoms. VIX at -13.61 signals peak pessimism. Deploy capital aggressively in tranches across index funds and quality large-caps. History consistently rewards investors who buy decisively at these levels. This is a generational buying opportunity.",
+    "isHighAlert": true,
+    "nifty50Close": 22776.1,
+    "niftyNext50Close": 69973.7,
+    "subIndicators": {
+      "vix": -13.61,
+      "fii": -302391,
+      "skew": -1.49,
+      "momentum": -2.099963406681938,
+      "trin": 0.19086125626147998,
+      "extrema": -0.046
+    }
+  },
+  {
     "date": "2026-10-05",
     "mmi": 12.607063627218157,
     "zone": "high_extreme_fear",
@@ -2126,30 +2150,6 @@
     "isHighAlert": false,
     "nifty50Close": 23547.75,
     "niftyNext50Close": 71073.65,
-    "subIndicators": {
-      "vix": null,
-      "fii": null,
-      "skew": null,
-      "momentum": null,
-      "trin": null,
-      "extrema": null
-    }
-  },
-  {
-    "date": "2026-05-27",
-    "mmi": 71.88,
-    "zone": "extreme_greed",
-    "signal": "REDUCE",
-    "color": "#f97316",
-    "emoji": "🟠",
-    "momentum": "rising_fast",
-    "mmiDelta": 4.48,
-    "mmiDeltaWeek": 7.86,
-    "action": "Extreme Greed (>70): avoid opening fresh positions. Markets are overbought and likely to turn downwards. Book partial profits, especially in high-beta and speculative positions.",
-    "analysis": "MMI at 71.9 Ã¢ÂÂ Extreme Greed (+4.5 pts today, +7.9 pts this week). Risk-reward skewed to the downside. Book partial profits in overvalued names; avoid aggressive new entries.",
-    "isHighAlert": false,
-    "nifty50Close": 23907.15,
-    "niftyNext50Close": 71957.2,
     "subIndicators": {
       "vix": null,
       "fii": null,
