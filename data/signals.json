@@ -1,5 +1,29 @@
 [
   {
+    "date": "2026-10-08",
+    "mmi": 17.01832106621627,
+    "zone": "high_extreme_fear",
+    "signal": "STRONG BUY",
+    "color": "#06b6d4",
+    "emoji": "🔵",
+    "momentum": "neutral",
+    "mmiDelta": -0.66,
+    "mmiDeltaWeek": -2.17,
+    "action": "Rare High Extreme Fear — deploy capital aggressively in tranches across index funds and quality large-caps. History marks this as a generational buying opportunity.",
+    "analysis": "MMI has dropped to a rare 17.02 — High Extreme Fear! This level occurs in less than 5% of trading sessions and has historically marked major market bottoms. VIX at -15.28 signals peak pessimism. Deploy capital aggressively in tranches across index funds and quality large-caps. History consistently rewards investors who buy decisively at these levels. This is a generational buying opportunity.",
+    "isHighAlert": true,
+    "nifty50Close": 22231.8,
+    "niftyNext50Close": 67614.5,
+    "subIndicators": {
+      "vix": -15.28,
+      "fii": -298285,
+      "skew": -1.49,
+      "momentum": -2.3299741456313616,
+      "trin": 0.8933912108475732,
+      "extrema": -0.178
+    }
+  },
+  {
     "date": "2026-10-07",
     "mmi": 17.679627726449596,
     "zone": "high_extreme_fear",
@@ -2126,30 +2150,6 @@
     "isHighAlert": false,
     "nifty50Close": 23483.55,
     "niftyNext50Close": 70115.8,
-    "subIndicators": {
-      "vix": null,
-      "fii": null,
-      "skew": null,
-      "momentum": null,
-      "trin": null,
-      "extrema": null
-    }
-  },
-  {
-    "date": "2026-06-01",
-    "mmi": 60.08,
-    "zone": "greed",
-    "signal": "HOLD",
-    "color": "#f59e0b",
-    "emoji": "🟡",
-    "momentum": "falling_fast",
-    "mmiDelta": -10.29,
-    "mmiDeltaWeek": -1.8,
-    "action": "Greed zone (50Ã¢ÂÂ70): stay cautious about new positions. If MMI is heading toward Extreme Greed Ã¢ÂÂ reduce exposure. If cooling from Extreme Greed Ã¢ÂÂ wait for a better entry before deploying fresh capital.",
-    "analysis": "MMI at 60.1 Ã¢ÂÂ Greed zone, momentum cooling (-10.3 pts). Prepare a watchlist; a dip toward Fear offers better entries.",
-    "isHighAlert": false,
-    "nifty50Close": 23382.6,
-    "niftyNext50Close": 69921.85,
     "subIndicators": {
       "vix": null,
       "fii": null,
