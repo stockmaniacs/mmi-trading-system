@@ -9430,5 +9430,53 @@
       "trin": 0.8933912108475732,
       "extrema": -0.178
     }
+  },
+  {
+    "date": "2026-10-09",
+    "mmi": 20.25437303667031,
+    "zone": "extreme_fear",
+    "signal": "BUY",
+    "color": "#22c55e",
+    "emoji": "🟢",
+    "momentum": "rising_fast",
+    "mmiDelta": 3.24,
+    "mmiDeltaWeek": 0,
+    "action": "Extreme Fear (<30) suggests a good time to open fresh positions. Markets are likely oversold and may turn upwards. Accumulate quality stocks in 2–3 tranches.",
+    "analysis": "MMI is at 20.25 in Extreme Fear with positive or stable momentum (+3.24 pts today). Fear is reducing — this is a good time to open fresh positions as markets may be turning upwards. Increase SIP top-ups, add selectively to quality mid-caps and blue-chips. Risk-reward is favourable for medium-term investors.",
+    "isHighAlert": false,
+    "nifty50Close": null,
+    "niftyNext50Close": null,
+    "subIndicators": {
+      "vix": null,
+      "fii": null,
+      "skew": null,
+      "momentum": null,
+      "trin": null,
+      "extrema": null
+    }
+  },
+  {
+    "date": "2026-10-12",
+    "mmi": 23.358742709321938,
+    "zone": "extreme_fear",
+    "signal": "BUY",
+    "color": "#22c55e",
+    "emoji": "🟢",
+    "momentum": "rising_fast",
+    "mmiDelta": 3.1,
+    "mmiDeltaWeek": 10.77,
+    "action": "Extreme Fear (<30) suggests a good time to open fresh positions. Markets are likely oversold and may turn upwards. Accumulate quality stocks in 2–3 tranches.",
+    "analysis": "MMI is at 23.36 in Extreme Fear with positive or stable momentum (+3.10 pts today). Fear is reducing — this is a good time to open fresh positions as markets may be turning upwards. Increase SIP top-ups, add selectively to quality mid-caps and blue-chips. Risk-reward is favourable for medium-term investors.",
+    "isHighAlert": false,
+    "nifty50Close": 22363.35,
+    "niftyNext50Close": 68351.7,
+    "subIndicators": {
+      "vix": -15.25,
+      "fii": -293988,
+      "skew": -0.42,
+      "momentum": -2.4756653823662282,
+      "trin": 0.15556722640651677,
+      "extrema": -0.094
+    }
   }
 ]
