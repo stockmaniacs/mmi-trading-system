@@ -9478,5 +9478,29 @@
       "trin": 0.15556722640651677,
       "extrema": -0.094
     }
+  },
+  {
+    "date": "2026-10-13",
+    "mmi": 27.368885659478558,
+    "zone": "extreme_fear",
+    "signal": "BUY",
+    "color": "#22c55e",
+    "emoji": "🟢",
+    "momentum": "rising_fast",
+    "mmiDelta": 4.01,
+    "mmiDeltaWeek": 9.97,
+    "action": "Extreme Fear (<30) suggests a good time to open fresh positions. Markets are likely oversold and may turn upwards. Accumulate quality stocks in 2–3 tranches.",
+    "analysis": "MMI is at 27.37 in Extreme Fear with positive or stable momentum (+4.01 pts today). Fear is reducing — this is a good time to open fresh positions as markets may be turning upwards. Increase SIP top-ups, add selectively to quality mid-caps and blue-chips. Risk-reward is favourable for medium-term investors.",
+    "isHighAlert": false,
+    "nifty50Close": 22721.95,
+    "niftyNext50Close": 68927.95,
+    "subIndicators": {
+      "vix": -14.12,
+      "fii": -293988,
+      "skew": -0.42,
+      "momentum": -2.457510788592999,
+      "trin": -0.23900327824232434,
+      "extrema": -0.054
+    }
   }
 ]
