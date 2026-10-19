@@ -9550,5 +9550,53 @@
       "trin": -0.4801901380208472,
       "extrema": -0.066
     }
+  },
+  {
+    "date": "2026-10-16",
+    "mmi": 43.70239304287236,
+    "zone": "fear",
+    "signal": "WATCH",
+    "color": "#84cc16",
+    "emoji": "🟡",
+    "momentum": "rising_fast",
+    "mmiDelta": 4.19,
+    "mmiDeltaWeek": 0,
+    "action": "Fear zone (30–50): action depends on trajectory. If MMI is falling → wait for Extreme Fear (<30) as a better entry. If MMI is recovering from Extreme Fear → selective positions may be considered.",
+    "analysis": "MMI is recovering at 43.70 in the Fear zone (+4.19 pts today). Fear is reducing — if MMI has bounced from Extreme Fear (<30), this may be a reasonable moment for selective entry into quality positions. Consider SIP top-ups and adding to high-conviction stocks in small tranches.",
+    "isHighAlert": false,
+    "nifty50Close": null,
+    "niftyNext50Close": null,
+    "subIndicators": {
+      "vix": null,
+      "fii": null,
+      "skew": null,
+      "momentum": null,
+      "trin": null,
+      "extrema": null
+    }
+  },
+  {
+    "date": "2026-10-19",
+    "mmi": 50.249888192903406,
+    "zone": "greed",
+    "signal": "HOLD",
+    "color": "#f59e0b",
+    "emoji": "🟡",
+    "momentum": "rising_fast",
+    "mmiDelta": 6.55,
+    "mmiDeltaWeek": 26.89,
+    "action": "Greed zone (50–70): stay cautious about new positions. If MMI is heading toward Extreme Greed → reduce exposure. If cooling from Extreme Greed → wait for a better entry before deploying fresh capital.",
+    "analysis": "MMI has risen to 50.25, moving toward Extreme Greed territory (+6.55 pts today, +26.89 pts this week). Greed is increasing — be cautious about opening new positions. Stay invested in quality holdings but resist chasing momentum. Monitor for a push above 70.",
+    "isHighAlert": false,
+    "nifty50Close": 22888.95,
+    "niftyNext50Close": 68695.85,
+    "subIndicators": {
+      "vix": -14.77,
+      "fii": -272999,
+      "skew": -0.19,
+      "momentum": -2.1785657916314904,
+      "trin": 1.8000077434833528,
+      "extrema": -0.098
+    }
   }
 ]
