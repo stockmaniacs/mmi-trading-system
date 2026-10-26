@@ -9646,5 +9646,53 @@
       "trin": 1.6269654688293573,
       "extrema": -0.146
     }
+  },
+  {
+    "date": "2026-10-23",
+    "mmi": 30.620534299889744,
+    "zone": "fear",
+    "signal": "WATCH",
+    "color": "#84cc16",
+    "emoji": "🟡",
+    "momentum": "falling_fast",
+    "mmiDelta": -15.77,
+    "mmiDeltaWeek": 0,
+    "action": "Fear zone (30–50): action depends on trajectory. If MMI is falling → wait for Extreme Fear (<30) as a better entry. If MMI is recovering from Extreme Fear → selective positions may be considered.",
+    "analysis": "MMI has fallen to 30.62 in the Fear zone (-15.77 pts today). Fear is increasing — action depends on trajectory. With MMI dropping, it may be prudent to wait for Extreme Fear (below 30), which is historically a stronger entry point. Prepare your watchlist and stagger planned buys.",
+    "isHighAlert": false,
+    "nifty50Close": null,
+    "niftyNext50Close": null,
+    "subIndicators": {
+      "vix": null,
+      "fii": null,
+      "skew": null,
+      "momentum": null,
+      "trin": null,
+      "extrema": null
+    }
+  },
+  {
+    "date": "2026-10-26",
+    "mmi": 34.41003377871078,
+    "zone": "fear",
+    "signal": "WATCH",
+    "color": "#84cc16",
+    "emoji": "🟡",
+    "momentum": "rising_fast",
+    "mmiDelta": 3.79,
+    "mmiDeltaWeek": -9.29,
+    "action": "Fear zone (30–50): action depends on trajectory. If MMI is falling → wait for Extreme Fear (<30) as a better entry. If MMI is recovering from Extreme Fear → selective positions may be considered.",
+    "analysis": "MMI is recovering at 34.41 in the Fear zone (+3.79 pts today). Fear is reducing — if MMI has bounced from Extreme Fear (<30), this may be a reasonable moment for selective entry into quality positions. Consider SIP top-ups and adding to high-conviction stocks in small tranches.",
+    "isHighAlert": false,
+    "nifty50Close": 22753.2,
+    "niftyNext50Close": 66477.15,
+    "subIndicators": {
+      "vix": -17.16,
+      "fii": -280183,
+      "skew": -0.23,
+      "momentum": -2.111083835156922,
+      "trin": -0.516160466917899,
+      "extrema": -0.162
+    }
   }
 ]
