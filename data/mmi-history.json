@@ -9718,5 +9718,29 @@
       "trin": 0.5224491958823689,
       "extrema": -0.106
     }
+  },
+  {
+    "date": "2026-10-28",
+    "mmi": 41.761446090726324,
+    "zone": "fear",
+    "signal": "WATCH",
+    "color": "#84cc16",
+    "emoji": "🟡",
+    "momentum": "neutral",
+    "mmiDelta": 0.86,
+    "mmiDeltaWeek": -4.63,
+    "action": "Fear zone (30–50): action depends on trajectory. If MMI is falling → wait for Extreme Fear (<30) as a better entry. If MMI is recovering from Extreme Fear → selective positions may be considered.",
+    "analysis": "MMI is at 41.76 in the Fear zone with neutral momentum (+0.86 pts). Action depends on trajectory: if MMI starts dropping toward 30, wait for Extreme Fear for a better entry. If stabilising after a bounce from below, selective accumulation in quality names can be considered. Monitor the trend closely.",
+    "isHighAlert": false,
+    "nifty50Close": 22698.85,
+    "niftyNext50Close": 67303.7,
+    "subIndicators": {
+      "vix": -16.25,
+      "fii": -277105,
+      "skew": -0.6,
+      "momentum": -2.0524484380652877,
+      "trin": -0.39804674175921523,
+      "extrema": -0.114
+    }
   }
 ]
