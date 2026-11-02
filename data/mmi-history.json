@@ -9766,5 +9766,53 @@
       "trin": 0.5527325856769093,
       "extrema": -0.05
     }
+  },
+  {
+    "date": "2026-10-30",
+    "mmi": 50.39706953467113,
+    "zone": "greed",
+    "signal": "HOLD",
+    "color": "#f59e0b",
+    "emoji": "🟡",
+    "momentum": "rising_fast",
+    "mmiDelta": 3.36,
+    "mmiDeltaWeek": 0,
+    "action": "Greed zone (50–70): stay cautious about new positions. If MMI is heading toward Extreme Greed → reduce exposure. If cooling from Extreme Greed → wait for a better entry before deploying fresh capital.",
+    "analysis": "MMI has risen to 50.40, moving toward Extreme Greed territory (+3.36 pts today, +0.00 pts this week). Greed is increasing — be cautious about opening new positions. Stay invested in quality holdings but resist chasing momentum. Monitor for a push above 70.",
+    "isHighAlert": false,
+    "nifty50Close": null,
+    "niftyNext50Close": null,
+    "subIndicators": {
+      "vix": null,
+      "fii": null,
+      "skew": null,
+      "momentum": null,
+      "trin": null,
+      "extrema": null
+    }
+  },
+  {
+    "date": "2026-11-02",
+    "mmi": 50.142868540962624,
+    "zone": "greed",
+    "signal": "HOLD",
+    "color": "#f59e0b",
+    "emoji": "🟡",
+    "momentum": "neutral",
+    "mmiDelta": -0.25,
+    "mmiDeltaWeek": 15.73,
+    "action": "Greed zone (50–70): stay cautious about new positions. If MMI is heading toward Extreme Greed → reduce exposure. If cooling from Extreme Greed → wait for a better entry before deploying fresh capital.",
+    "analysis": "MMI holds at 50.14 in the Greed zone with neutral momentum (-0.25 pts). No immediate action required — hold existing positions with defined stop-losses. Watch for a directional break: above 70 (reduce) or below 50 (evaluate entry).",
+    "isHighAlert": false,
+    "nifty50Close": 23440.8,
+    "niftyNext50Close": 68962.65,
+    "subIndicators": {
+      "vix": -15.5,
+      "fii": -240753,
+      "skew": -0.6,
+      "momentum": -1.660499785906791,
+      "trin": 0.0273990322515744,
+      "extrema": -0.028
+    }
   }
 ]
