@@ -9862,5 +9862,29 @@
       "trin": 0.934344660376421,
       "extrema": 0.038
     }
+  },
+  {
+    "date": "2026-11-05",
+    "mmi": 76.17411318993342,
+    "zone": "extreme_greed",
+    "signal": "REDUCE",
+    "color": "#f97316",
+    "emoji": "🟠",
+    "momentum": "rising_fast",
+    "mmiDelta": 7.07,
+    "mmiDeltaWeek": 29.13,
+    "action": "Extreme Greed (>70): avoid opening fresh positions. Markets are overbought and likely to turn downwards. Book partial profits, especially in high-beta and speculative positions.",
+    "analysis": "MMI has jumped sharply to 76.17 (+7.07 pts today), pushing deeper into Extreme Greed. VIX at -15.58. Markets are running hot. Avoid aggressive new entries — risk-reward is skewed to the downside. Consider partial profit-booking in overvalued names.",
+    "isHighAlert": false,
+    "nifty50Close": 24536.6,
+    "niftyNext50Close": 71768.65,
+    "subIndicators": {
+      "vix": -15.58,
+      "fii": -185979,
+      "skew": 0.04,
+      "momentum": -0.7180912183342252,
+      "trin": 0.23173726974160874,
+      "extrema": 0.054
+    }
   }
 ]
