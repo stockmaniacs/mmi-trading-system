@@ -1,5 +1,29 @@
 [
   {
+    "date": "2026-11-05",
+    "mmi": 76.17411318993342,
+    "zone": "extreme_greed",
+    "signal": "REDUCE",
+    "color": "#f97316",
+    "emoji": "🟠",
+    "momentum": "rising_fast",
+    "mmiDelta": 7.07,
+    "mmiDeltaWeek": 29.13,
+    "action": "Extreme Greed (>70): avoid opening fresh positions. Markets are overbought and likely to turn downwards. Book partial profits, especially in high-beta and speculative positions.",
+    "analysis": "MMI has jumped sharply to 76.17 (+7.07 pts today), pushing deeper into Extreme Greed. VIX at -15.58. Markets are running hot. Avoid aggressive new entries — risk-reward is skewed to the downside. Consider partial profit-booking in overvalued names.",
+    "isHighAlert": false,
+    "nifty50Close": 24536.6,
+    "niftyNext50Close": 71768.65,
+    "subIndicators": {
+      "vix": -15.58,
+      "fii": -185979,
+      "skew": 0.04,
+      "momentum": -0.7180912183342252,
+      "trin": 0.23173726974160874,
+      "extrema": 0.054
+    }
+  },
+  {
     "date": "2026-11-04",
     "mmi": 69.10832610761895,
     "zone": "greed",
@@ -2126,30 +2150,6 @@
     "isHighAlert": false,
     "nifty50Close": 23865.75,
     "niftyNext50Close": 71629.45,
-    "subIndicators": {
-      "vix": null,
-      "fii": null,
-      "skew": null,
-      "momentum": null,
-      "trin": null,
-      "extrema": null
-    }
-  },
-  {
-    "date": "2026-06-29",
-    "mmi": 69.48,
-    "zone": "greed",
-    "signal": "HOLD",
-    "color": "#f59e0b",
-    "emoji": "🟡",
-    "momentum": "rising_fast",
-    "mmiDelta": 4.01,
-    "mmiDeltaWeek": 1.74,
-    "action": "Greed zone (50Ã¢ÂÂ70): stay cautious about new positions. If MMI is heading toward Extreme Greed Ã¢ÂÂ reduce exposure. If cooling from Extreme Greed Ã¢ÂÂ wait for a better entry before deploying fresh capital.",
-    "analysis": "MMI at 69.5 Ã¢ÂÂ High Extreme Greed with upward momentum (+4.0 pts today, +1.7 pts this week). Markets significantly overbought. Avoid all new positions and consider booking profits in weaker holdings.",
-    "isHighAlert": false,
-    "nifty50Close": 23946.25,
-    "niftyNext50Close": 71510.3,
     "subIndicators": {
       "vix": null,
       "fii": null,
