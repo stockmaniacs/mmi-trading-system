@@ -9886,5 +9886,53 @@
       "trin": 0.23173726974160874,
       "extrema": 0.054
     }
+  },
+  {
+    "date": "2026-11-08",
+    "mmi": 79.99992977582149,
+    "zone": "extreme_greed",
+    "signal": "REDUCE",
+    "color": "#f97316",
+    "emoji": "🟠",
+    "momentum": "rising_fast",
+    "mmiDelta": 3.83,
+    "mmiDeltaWeek": 0,
+    "action": "Extreme Greed (>70): avoid opening fresh positions. Markets are overbought and likely to turn downwards. Book partial profits, especially in high-beta and speculative positions.",
+    "analysis": "MMI has jumped sharply to 80.00 (+3.83 pts today), pushing deeper into Extreme Greed. VIX at N/A. Markets are running hot. Avoid aggressive new entries — risk-reward is skewed to the downside. Consider partial profit-booking in overvalued names.",
+    "isHighAlert": false,
+    "nifty50Close": null,
+    "niftyNext50Close": null,
+    "subIndicators": {
+      "vix": null,
+      "fii": null,
+      "skew": null,
+      "momentum": null,
+      "trin": null,
+      "extrema": null
+    }
+  },
+  {
+    "date": "2026-11-09",
+    "mmi": 77.5000347744097,
+    "zone": "extreme_greed",
+    "signal": "REDUCE",
+    "color": "#f97316",
+    "emoji": "🟠",
+    "momentum": "falling",
+    "mmiDelta": -2.5,
+    "mmiDeltaWeek": 18.64,
+    "action": "Extreme Greed (>70): avoid opening fresh positions. Markets are overbought and likely to turn downwards. Book partial profits, especially in high-beta and speculative positions.",
+    "analysis": "MMI has eased to 77.50 within Extreme Greed (-2.50 pts today). Momentum is slowing — an early sign the rally may be losing steam. Book partial profits, especially in recent outperformers. A move toward the Greed zone (below 70) would confirm the reversal.",
+    "isHighAlert": false,
+    "nifty50Close": 25044.65,
+    "niftyNext50Close": 72789.45,
+    "subIndicators": {
+      "vix": -17.42,
+      "fii": -100416,
+      "skew": 0.04,
+      "momentum": 0.5236119300117223,
+      "trin": -0.12742899309352795,
+      "extrema": 0.068
+    }
   }
 ]
