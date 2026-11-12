@@ -9934,5 +9934,53 @@
       "trin": -0.12742899309352795,
       "extrema": 0.068
     }
+  },
+  {
+    "date": "2026-11-11",
+    "mmi": 77.70215328720869,
+    "zone": "extreme_greed",
+    "signal": "REDUCE",
+    "color": "#f97316",
+    "emoji": "🟠",
+    "momentum": "neutral",
+    "mmiDelta": 0.2,
+    "mmiDeltaWeek": 0,
+    "action": "Extreme Greed (>70): avoid opening fresh positions. Markets are overbought and likely to turn downwards. Book partial profits, especially in high-beta and speculative positions.",
+    "analysis": "MMI is at 77.70 in Extreme Greed territory (+0.20 pts today, +0.00 pts this week). Markets are overbought and unlikely to reward fresh long positions. Trail stop-losses on existing holdings, reduce speculative bets, and have a profit-booking plan ready.",
+    "isHighAlert": false,
+    "nifty50Close": null,
+    "niftyNext50Close": null,
+    "subIndicators": {
+      "vix": null,
+      "fii": null,
+      "skew": null,
+      "momentum": null,
+      "trin": null,
+      "extrema": null
+    }
+  },
+  {
+    "date": "2026-11-12",
+    "mmi": 82.37984219323837,
+    "zone": "high_extreme_greed",
+    "signal": "AVOID",
+    "color": "#dc2626",
+    "emoji": "🔴",
+    "momentum": "rising_fast",
+    "mmiDelta": 4.68,
+    "mmiDeltaWeek": 6.21,
+    "action": "High Extreme Greed (>80): avoid all new positions. Sit on cash. Market is significantly overbought at a rare extreme — a meaningful correction is likely.",
+    "analysis": "MMI has surged to 82.38, entering rare High Extreme Greed territory with strong upward momentum (+4.68 pts today). Markets are significantly overbought. VIX at -16.62 signals complacency. History shows sharp corrections follow such readings. Avoid all new positions and consider booking profits in weaker holdings.",
+    "isHighAlert": true,
+    "nifty50Close": 25299.35,
+    "niftyNext50Close": 73481.25,
+    "subIndicators": {
+      "vix": -16.62,
+      "fii": -70413,
+      "skew": 0.07,
+      "momentum": 1.2383053335371528,
+      "trin": 1.0353871294205637,
+      "extrema": 0.096
+    }
   }
 ]
