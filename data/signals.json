@@ -1,5 +1,53 @@
 [
   {
+    "date": "2026-11-12",
+    "mmi": 82.37984219323837,
+    "zone": "high_extreme_greed",
+    "signal": "AVOID",
+    "color": "#dc2626",
+    "emoji": "🔴",
+    "momentum": "rising_fast",
+    "mmiDelta": 4.68,
+    "mmiDeltaWeek": 6.21,
+    "action": "High Extreme Greed (>80): avoid all new positions. Sit on cash. Market is significantly overbought at a rare extreme — a meaningful correction is likely.",
+    "analysis": "MMI has surged to 82.38, entering rare High Extreme Greed territory with strong upward momentum (+4.68 pts today). Markets are significantly overbought. VIX at -16.62 signals complacency. History shows sharp corrections follow such readings. Avoid all new positions and consider booking profits in weaker holdings.",
+    "isHighAlert": true,
+    "nifty50Close": 25299.35,
+    "niftyNext50Close": 73481.25,
+    "subIndicators": {
+      "vix": -16.62,
+      "fii": -70413,
+      "skew": 0.07,
+      "momentum": 1.2383053335371528,
+      "trin": 1.0353871294205637,
+      "extrema": 0.096
+    }
+  },
+  {
+    "date": "2026-11-11",
+    "mmi": 77.70215328720869,
+    "zone": "extreme_greed",
+    "signal": "REDUCE",
+    "color": "#f97316",
+    "emoji": "🟠",
+    "momentum": "neutral",
+    "mmiDelta": 0.2,
+    "mmiDeltaWeek": 0,
+    "action": "Extreme Greed (>70): avoid opening fresh positions. Markets are overbought and likely to turn downwards. Book partial profits, especially in high-beta and speculative positions.",
+    "analysis": "MMI is at 77.70 in Extreme Greed territory (+0.20 pts today, +0.00 pts this week). Markets are overbought and unlikely to reward fresh long positions. Trail stop-losses on existing holdings, reduce speculative bets, and have a profit-booking plan ready.",
+    "isHighAlert": false,
+    "nifty50Close": null,
+    "niftyNext50Close": null,
+    "subIndicators": {
+      "vix": null,
+      "fii": null,
+      "skew": null,
+      "momentum": null,
+      "trin": null,
+      "extrema": null
+    }
+  },
+  {
     "date": "2026-11-09",
     "mmi": 77.5000347744097,
     "zone": "extreme_greed",
@@ -2102,54 +2150,6 @@
     "isHighAlert": false,
     "nifty50Close": 24430.35,
     "niftyNext50Close": 72685.6,
-    "subIndicators": {
-      "vix": null,
-      "fii": null,
-      "skew": null,
-      "momentum": null,
-      "trin": null,
-      "extrema": null
-    }
-  },
-  {
-    "date": "2026-07-03",
-    "mmi": 64.44,
-    "zone": "greed",
-    "signal": "HOLD",
-    "color": "#f59e0b",
-    "emoji": "🟡",
-    "momentum": "neutral",
-    "mmiDelta": -0.25,
-    "mmiDeltaWeek": -1.03,
-    "action": "Greed zone (50Ã¢ÂÂ70): stay cautious about new positions. If MMI is heading toward Extreme Greed Ã¢ÂÂ reduce exposure. If cooling from Extreme Greed Ã¢ÂÂ wait for a better entry before deploying fresh capital.",
-    "analysis": "MMI at 64.4 Ã¢ÂÂ Greed zone, neutral momentum. Hold existing positions with stop-losses. No urgent action needed.",
-    "isHighAlert": false,
-    "nifty50Close": 24270.85,
-    "niftyNext50Close": 72268.95,
-    "subIndicators": {
-      "vix": null,
-      "fii": null,
-      "skew": null,
-      "momentum": null,
-      "trin": null,
-      "extrema": null
-    }
-  },
-  {
-    "date": "2026-07-02",
-    "mmi": 64.69,
-    "zone": "greed",
-    "signal": "HOLD",
-    "color": "#f59e0b",
-    "emoji": "🟡",
-    "momentum": "neutral",
-    "mmiDelta": 0.8,
-    "mmiDeltaWeek": -2.72,
-    "action": "Greed zone (50Ã¢ÂÂ70): stay cautious about new positions. If MMI is heading toward Extreme Greed Ã¢ÂÂ reduce exposure. If cooling from Extreme Greed Ã¢ÂÂ wait for a better entry before deploying fresh capital.",
-    "analysis": "MMI at 64.7 Ã¢ÂÂ Greed zone, neutral momentum. Hold existing positions with stop-losses. No urgent action needed.",
-    "isHighAlert": false,
-    "nifty50Close": 24175.7,
-    "niftyNext50Close": 72418.55,
     "subIndicators": {
       "vix": null,
       "fii": null,
