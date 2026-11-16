@@ -9982,5 +9982,53 @@
       "trin": 1.0353871294205637,
       "extrema": 0.096
     }
+  },
+  {
+    "date": "2026-11-13",
+    "mmi": 79.23264040546898,
+    "zone": "extreme_greed",
+    "signal": "REDUCE",
+    "color": "#f97316",
+    "emoji": "🟠",
+    "momentum": "falling_fast",
+    "mmiDelta": -3.15,
+    "mmiDeltaWeek": 0,
+    "action": "Extreme Greed (>70): avoid opening fresh positions. Markets are overbought and likely to turn downwards. Book partial profits, especially in high-beta and speculative positions.",
+    "analysis": "MMI has eased to 79.23 within Extreme Greed (-3.15 pts today). Momentum is slowing — an early sign the rally may be losing steam. Book partial profits, especially in recent outperformers. A move toward the Greed zone (below 70) would confirm the reversal.",
+    "isHighAlert": false,
+    "nifty50Close": null,
+    "niftyNext50Close": null,
+    "subIndicators": {
+      "vix": null,
+      "fii": null,
+      "skew": null,
+      "momentum": null,
+      "trin": null,
+      "extrema": null
+    }
+  },
+  {
+    "date": "2026-11-16",
+    "mmi": 76.3404379571597,
+    "zone": "extreme_greed",
+    "signal": "REDUCE",
+    "color": "#f97316",
+    "emoji": "🟠",
+    "momentum": "falling",
+    "mmiDelta": -2.89,
+    "mmiDeltaWeek": -3.66,
+    "action": "Extreme Greed (>70): avoid opening fresh positions. Markets are overbought and likely to turn downwards. Book partial profits, especially in high-beta and speculative positions.",
+    "analysis": "MMI has eased to 76.34 within Extreme Greed (-2.89 pts today). Momentum is slowing — an early sign the rally may be losing steam. Book partial profits, especially in recent outperformers. A move toward the Greed zone (below 70) would confirm the reversal.",
+    "isHighAlert": false,
+    "nifty50Close": 25291.1,
+    "niftyNext50Close": 72490.25,
+    "subIndicators": {
+      "vix": -15.68,
+      "fii": -55920,
+      "skew": 0.03,
+      "momentum": 1.756137335181512,
+      "trin": 0.11368935945582698,
+      "extrema": 0.078
+    }
   }
 ]
