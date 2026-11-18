@@ -10054,5 +10054,29 @@
       "trin": -0.05169625819095964,
       "extrema": 0.056
     }
+  },
+  {
+    "date": "2026-11-18",
+    "mmi": 72.98621792872697,
+    "zone": "extreme_greed",
+    "signal": "REDUCE",
+    "color": "#f97316",
+    "emoji": "🟠",
+    "momentum": "falling_fast",
+    "mmiDelta": -3.6,
+    "mmiDeltaWeek": -4.72,
+    "action": "Extreme Greed (>70): avoid opening fresh positions. Markets are overbought and likely to turn downwards. Book partial profits, especially in high-beta and speculative positions.",
+    "analysis": "MMI has eased to 72.99 within Extreme Greed (-3.60 pts today). Momentum is slowing — an early sign the rally may be losing steam. Book partial profits, especially in recent outperformers. A move toward the Greed zone (below 70) would confirm the reversal.",
+    "isHighAlert": false,
+    "nifty50Close": 25227.95,
+    "niftyNext50Close": 71714.7,
+    "subIndicators": {
+      "vix": -15.57,
+      "fii": -65123,
+      "skew": 0.03,
+      "momentum": 2.1770968912253883,
+      "trin": -0.14658497761673578,
+      "extrema": 0.034
+    }
   }
 ]
