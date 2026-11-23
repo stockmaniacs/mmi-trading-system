@@ -10102,5 +10102,53 @@
       "trin": 0.07306892056441532,
       "extrema": 0.066
     }
+  },
+  {
+    "date": "2026-11-20",
+    "mmi": 74.79040987619405,
+    "zone": "extreme_greed",
+    "signal": "REDUCE",
+    "color": "#f97316",
+    "emoji": "🟠",
+    "momentum": "rising",
+    "mmiDelta": 2.93,
+    "mmiDeltaWeek": 0,
+    "action": "Extreme Greed (>70): avoid opening fresh positions. Markets are overbought and likely to turn downwards. Book partial profits, especially in high-beta and speculative positions.",
+    "analysis": "MMI is at 74.79 in Extreme Greed territory (+2.93 pts today, +0.00 pts this week). Markets are overbought and unlikely to reward fresh long positions. Trail stop-losses on existing holdings, reduce speculative bets, and have a profit-booking plan ready.",
+    "isHighAlert": false,
+    "nifty50Close": null,
+    "niftyNext50Close": null,
+    "subIndicators": {
+      "vix": null,
+      "fii": null,
+      "skew": null,
+      "momentum": null,
+      "trin": null,
+      "extrema": null
+    }
+  },
+  {
+    "date": "2026-11-23",
+    "mmi": 66.50661275595698,
+    "zone": "greed",
+    "signal": "HOLD",
+    "color": "#f59e0b",
+    "emoji": "🟡",
+    "momentum": "falling_fast",
+    "mmiDelta": -8.28,
+    "mmiDeltaWeek": -9.83,
+    "action": "Greed zone (50–70): stay cautious about new positions. If MMI is heading toward Extreme Greed → reduce exposure. If cooling from Extreme Greed → wait for a better entry before deploying fresh capital.",
+    "analysis": "MMI has dipped to 66.51 within the Greed zone (-8.28 pts today, -9.83 pts this week). Greed is reducing. More patience is suggested before looking for fresh opportunities — wait for MMI to drop toward Fear or Extreme Fear for a better entry point.",
+    "isHighAlert": false,
+    "nifty50Close": 25349.65,
+    "niftyNext50Close": 72245.4,
+    "subIndicators": {
+      "vix": -17.7,
+      "fii": -70454,
+      "skew": -0.2,
+      "momentum": 2.7515119475848557,
+      "trin": -0.7076333367400617,
+      "extrema": 0.014
+    }
   }
 ]
