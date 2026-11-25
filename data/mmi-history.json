@@ -10174,5 +10174,29 @@
       "trin": -0.7076731042889861,
       "extrema": 0.014
     }
+  },
+  {
+    "date": "2026-11-25",
+    "mmi": 59.91941830136071,
+    "zone": "greed",
+    "signal": "HOLD",
+    "color": "#f59e0b",
+    "emoji": "🟡",
+    "momentum": "falling_fast",
+    "mmiDelta": -6.59,
+    "mmiDeltaWeek": -16.67,
+    "action": "Greed zone (50–70): stay cautious about new positions. If MMI is heading toward Extreme Greed → reduce exposure. If cooling from Extreme Greed → wait for a better entry before deploying fresh capital.",
+    "analysis": "MMI has dipped to 59.92 within the Greed zone (-6.59 pts today, -16.67 pts this week). Greed is reducing. More patience is suggested before looking for fresh opportunities — wait for MMI to drop toward Fear or Extreme Fear for a better entry point.",
+    "isHighAlert": false,
+    "nifty50Close": 25819.25,
+    "niftyNext50Close": 72788.05,
+    "subIndicators": {
+      "vix": -17.69,
+      "fii": -90949,
+      "skew": -0.12,
+      "momentum": 2.9492665842504406,
+      "trin": -0.25266626600514575,
+      "extrema": 0.056
+    }
   }
 ]
